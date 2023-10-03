@@ -2,4 +2,4 @@ target/
 Cargo.lock
 gauss-procs-x*
 proc*txt
-*.data
+*.data*

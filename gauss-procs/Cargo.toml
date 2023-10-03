@@ -11,6 +11,8 @@ lto = true
 codegen-units = 1
 
 [dependencies]
+argmin = { workspace = true }
 faer = { workspace = true }
 gauss-lib = { workspace = true }
-itertools = "0.11.0"
+itertools = { workspace = true }
+ordered-float = { workspace = true }

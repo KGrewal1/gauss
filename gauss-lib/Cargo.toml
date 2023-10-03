@@ -10,5 +10,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 faer = { workspace = true }
 nalgebra = { workspace = true }
+itertools = { workspace = true }
+ordered-float = { workspace = true }
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
