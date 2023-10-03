@@ -1,9 +1,28 @@
 use gauss_lib::*;
+use itertools::Itertools;
+// test function from sfu test functions
+// lim et al nonpolynomial function
+fn lim_nonpoly(x: &(f64, f64)) -> f64 {
+    ((30. + 5. * x.0 * (5. * x.0).sin()) * (4. + (-5. * x.1).exp()) - 100.) / 6.
+}
+
+fn metric(x: &(f64, f64), y: &(f64, f64)) -> f64 {
+    let z2 = 5_000. * (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
+    (-0.5 * z2).exp()
+}
+
 fn main() {
-    fn f(x: &f64, y: &f64) -> f64 {
-        let z = (x - y).abs();
-        (-0.5 * z.powi(2)).exp()
-    }
-    let proc = GaussProcs::new(vec![1., 2.], vec![1., 2.], 0., f).unwrap();
-    println!("{:?}", proc.interpolate(&[1.5]));
+    // println!("{}", lim_nonpoly((0., 0.)));
+    let n: usize = 80;
+    let range: Vec<f64> = (0..(n + 1)).map(|i| i as f64 / (n as f64)).collect();
+    let inputs: Vec<(f64, f64)> = range.clone().into_iter().cartesian_product(range).collect();
+    let outputs: Vec<f64> = inputs.iter().map(|x| lim_nonpoly(x)).collect();
+    // println!("{:?}", inputs);
+    // println!("{:?}", outputs);
+    println!("{:?}, {:?}", &inputs[100], &inputs[99]);
+    println!("{}", metric(&inputs[100], &inputs[99]));
+    let proc = GaussProcs::new(inputs, outputs, 0., metric).unwrap();
+    // println!("{:?}", proc.interpolate(&[(0.215, 0.255)]).unwrap());
+    println!("{:?}", proc.smart_interpolate(&(0.215, 0.255)).unwrap());
+    println!("{:?}", lim_nonpoly(&(0.215, 0.255)));
 }
