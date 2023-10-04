@@ -5,70 +5,67 @@
     clippy::complexity,
     clippy::style
 )]
-use std::{cmp::Reverse, collections::BinaryHeap, f64::consts::PI};
+use std::{
+    cmp::Reverse,
+    collections::BinaryHeap,
+    f64::consts::PI,
+    fmt::{Debug, Display},
+};
 
 use faer::{solvers::Solver, Faer, IntoFaer, IntoNalgebra, Mat};
 use nalgebra::{Dyn, Matrix, VecStorage};
 use ordered_float::NotNan;
 use serde::{Deserialize, Serialize};
-mod exp;
+
 #[derive(Debug, Clone)]
+/// Error in the GP
 pub enum ProcessError {
+    /// the input arrays are of different length
     MismatchedInputs,
+    /// cholesky decomposition failure
     CholeskyFaiure,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-/// Internal component for serialisation and deserialisation
-struct Process<T> {
-    inputs: Vec<T>, // the list of input values with know outputs
-    res: Vec<f64>,  // list of the known outputs
-    var: f64,       // the variance
-    autocorr: Matrix<f64, Dyn, Dyn, VecStorage<f64, Dyn, Dyn>>, // autocorrelation matrix
+pub trait kernel<const N: usize, Rhs = Self> {
+    // there must be a 'metric' providing similarity between points
+    fn metric(&self, rhs: &Rhs, param: &[f64; N]) -> f64;
+    // this must have some derivative
+    fn deriv(&self, rhs: &Rhs, param: &[f64; N]) -> [f64; N];
 }
 
 #[derive(Clone, Debug)]
-pub struct GaussProcs<T> {
-    process: Process<T>,
-    pub metric: fn(&T, &T) -> f64,
+pub struct GaussProcs<const N: usize, T>
+where
+    T: kernel<N>,
+{
+    inputs: Vec<T>,
+    res: Vec<f64>,
+    var: f64,
+    p: [f64; N],
 }
 
-impl<T> GaussProcs<T> {
-    pub fn new(
-        vals: Vec<T>,
-        res: Vec<f64>,
-        var: f64,
-        metric: fn(&T, &T) -> f64,
-    ) -> Result<Self, ProcessError> {
-        if vals.len() == res.len() {
-            let m2 = Mat::from_fn(vals.len(), vals.len(), |i, j| metric(&vals[i], &vals[j]))
-                + Mat::from_fn(
-                    vals.len(),
-                    vals.len(),
-                    |i, j| if i == j { var } else { 0.0 },
-                );
-            let m = m2.as_ref().into_nalgebra();
-            let process = Process {
-                inputs: vals,
+impl<const N: usize, T> GaussProcs<N, T>
+where
+    T: kernel<N>,
+{
+    pub fn new(inputs: Vec<T>, res: Vec<f64>, var: f64, p: [f64; N]) -> Result<Self, ProcessError> {
+        if inputs.len() == res.len() {
+            Ok(GaussProcs {
+                inputs,
                 res,
                 var,
-                autocorr: m.into(),
-            };
-            Ok(GaussProcs { process, metric })
+                p,
+            })
         } else {
             Err(ProcessError::MismatchedInputs)
         }
     }
 
     pub fn log_marginal_likelihood(&self) -> Result<f64, ProcessError> {
-        let y1 = &self.process.res;
+        let x1 = &self.inputs;
+        let y1 = &self.res;
         let n = y1.len();
-        let autocorr: Mat<f64> = self
-            .process
-            .autocorr
-            .view_range(.., ..)
-            .into_faer()
-            .to_owned();
+        let autocorr = Mat::from_fn(n, n, |i, j| kernel::metric(&x1[i], &x1[j], &self.p));
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
         let chol_res = match autocorr.cholesky(faer::Side::Lower) {
             Ok(value) => value.solve(&y1),
@@ -82,8 +79,8 @@ impl<T> GaussProcs<T> {
     }
 
     pub fn interpolate(&self, x2: &[T]) -> Result<(Mat<f64>, Mat<f64>), ProcessError> {
-        let x1 = &self.process.inputs;
-        let y1 = &self.process.res;
+        let x1 = &self.inputs;
+        let y1 = &self.res;
         let n = x1.len();
         // let autocorr: Mat<f64> = self
         //     .process
@@ -91,9 +88,13 @@ impl<T> GaussProcs<T> {
         //     .view_range(.., ..)
         //     .into_faer()
         //     .to_owned();
-        let autocorr = Mat::from_fn(n, n, |i, j| (self.metric)(&x1[i], &x1[j]));
-        let crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| (self.metric)(&x1[i], &x2[j]));
-        let postcorr = Mat::from_fn(x2.len(), x2.len(), |i, j| (self.metric)(&x2[i], &x2[j]));
+        let autocorr = Mat::from_fn(n, n, |i, j| kernel::metric(&x1[i], &x1[j], &self.p));
+        let crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
+            kernel::metric(&x1[i], &x2[j], &self.p)
+        });
+        let postcorr = Mat::from_fn(x2.len(), x2.len(), |i, j| {
+            kernel::metric(&x2[i], &x2[j], &self.p)
+        });
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
         // println!("{:?}", autocorr);
         let chol_res = match autocorr.cholesky(faer::Side::Lower) {
@@ -107,31 +108,24 @@ impl<T> GaussProcs<T> {
     }
 
     pub fn interpolate_one(&self, x2: &T) -> Result<(Mat<f64>, Mat<f64>), ProcessError> {
-        let n = &self.process.inputs.len();
+        let n = &self.inputs.len();
         let mut heap = BinaryHeap::with_capacity(n + 1);
 
-        self.process
-            .inputs
+        self.inputs
             .iter()
-            .map(|val| NotNan::new((self.metric)(val, x2)).expect("NaN from metric"))
+            .map(|val| NotNan::new(kernel::metric(val, x2, &self.p)).expect("NaN from metric"))
             .enumerate()
             .for_each(|(i, num)| {
                 heap.push(Reverse((num, i)));
             });
 
         let indices: Vec<usize> = heap.into_vec().iter().map(|&Reverse((_, i))| i).collect();
-        let x1: Vec<&T> = indices.iter().map(|i| &self.process.inputs[*i]).collect();
-        let y1: Vec<&f64> = indices.iter().map(|i| &self.process.res[*i]).collect();
+        let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
+        let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
         let n = x1.len();
-        // let autocorr: Mat<f64> = self
-        //     .process
-        //     .autocorr
-        //     .view_range(.., ..)
-        //     .into_faer()
-        //     .to_owned();
-        let autocorr = Mat::from_fn(n, n, |i, j| (self.metric)(&x1[i], &x1[j]));
-        let crosscorr = Mat::from_fn(n, 1, |i, _| (self.metric)(&x1[i], &x2));
-        let postcorr = Mat::from_fn(1, 1, |_, _| (self.metric)(&x2, &x2));
+        let autocorr = Mat::from_fn(n, n, |i, j| kernel::metric(x1[i], x1[j], &self.p));
+        let crosscorr = Mat::from_fn(n, 1, |i, _| kernel::metric(x1[i], x2, &self.p));
+        let postcorr = Mat::from_fn(1, 1, |_, _| kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
         // println!("{:?}", autocorr);
         let chol_res = match autocorr.cholesky(faer::Side::Lower) {
@@ -151,10 +145,9 @@ impl<T> GaussProcs<T> {
 
         let mut heap = BinaryHeap::with_capacity(n + 1);
 
-        self.process
-            .inputs
+        self.inputs
             .iter()
-            .map(|val| NotNan::new((self.metric)(val, x2)).expect("NaN from metric"))
+            .map(|val| NotNan::new(kernel::metric(val, x2, &self.p)).expect("NaN from metric"))
             .enumerate()
             .for_each(|(i, num)| {
                 heap.push(Reverse((num, i)));
@@ -166,12 +159,12 @@ impl<T> GaussProcs<T> {
         let indices: Vec<usize> = heap.into_vec().iter().map(|&Reverse((_, i))| i).collect();
 
         println!("sorted");
-        let x1: Vec<&T> = indices.iter().map(|i| &self.process.inputs[*i]).collect();
-        let y1: Vec<&f64> = indices.iter().map(|i| &self.process.res[*i]).collect();
+        let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
+        let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| (self.metric)(&x1[i], &x1[j]));
-        let crosscorr = Mat::from_fn(n, 1, |i, _| (self.metric)(&x1[i], &x2));
-        let postcorr = Mat::from_fn(1, 1, |_, _| (self.metric)(&x2, &x2));
+        let autocorr = Mat::from_fn(n, n, |i, j| kernel::metric(x1[i], x1[j], &self.p));
+        let crosscorr = Mat::from_fn(n, 1, |i, _| kernel::metric(x1[i], x2, &self.p));
+        let postcorr = Mat::from_fn(1, 1, |_, _| kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
 
         let chol_res = match autocorr.cholesky(faer::Side::Lower) {
@@ -193,10 +186,9 @@ impl<T> GaussProcs<T> {
 
         let mut heap = BinaryHeap::with_capacity(n + 1);
 
-        self.process
-            .inputs
+        self.inputs
             .iter()
-            .map(|val| NotNan::new((self.metric)(val, x2)).expect("NaN from metric"))
+            .map(|val| NotNan::new(kernel::metric(val, x2, &self.p)).expect("NaN from metric"))
             .enumerate()
             .for_each(|(i, num)| {
                 heap.push(Reverse((num, i)));
@@ -208,12 +200,12 @@ impl<T> GaussProcs<T> {
         let indices: Vec<usize> = heap.into_vec().iter().map(|&Reverse((_, i))| i).collect();
 
         println!("sorted");
-        let x1: Vec<&T> = indices.iter().map(|i| &self.process.inputs[*i]).collect();
-        let y1: Vec<&f64> = indices.iter().map(|i| &self.process.res[*i]).collect();
+        let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
+        let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| (self.metric)(&x1[i], &x1[j]));
-        let crosscorr = Mat::from_fn(n, 1, |i, _| (self.metric)(&x1[i], &x2));
-        let postcorr = Mat::from_fn(1, 1, |_, _| (self.metric)(&x2, &x2));
+        let autocorr = Mat::from_fn(n, n, |i, j| kernel::metric(x1[i], x1[j], &self.p));
+        let crosscorr = Mat::from_fn(n, 1, |i, _| kernel::metric(x1[i], x2, &self.p));
+        let postcorr = Mat::from_fn(1, 1, |_, _| kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
 
         let chol_res = match autocorr.cholesky(faer::Side::Lower) {
