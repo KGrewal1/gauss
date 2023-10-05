@@ -17,19 +17,23 @@ fn lim_nonpoly(x: &TwoDpoint) -> f64 {
 /// with input variables x, and outputs y is
 /// is Tr(y^(T)K-1^(T)K-1y - K-1 dK/dp)/2
 /// where K-1 is the inverse of the autocorrelation matrix
-// fn gradient(p: f64, x1: &[(f64, f64)], y1: &[f64]) -> f64 {
+// fn gradient(p: f64, x1: &[TwoDpoint], y1: &[f64]) -> f64 {
 //     let n = y1.len();
-//     let metric = |x: &(f64, f64), y: &(f64, f64)| -> f64 {
+//     let metric = |x: &TwoDpoint, y: &TwoDpoint| -> f64 {
 //         let z2 = p * (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
 //         (-0.5 * z2).exp()
 //     };
-//     let metric_deriv = |x: &(f64, f64), y: &(f64, f64)| -> f64 {
+//     let metric_deriv = |x: &TwoDpoint, y: &TwoDpoint| -> f64 {
 //         let z2 = p * (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
 //         let dz2dp = (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
 //         -0.5 * dz2dp * (-0.5 * z2).exp()
 //     };
+//     println!("metric {}", metric(&x1[15], &x1[20]));
+//     println!("deriv {}", metric_deriv(&x1[15], &x1[20]));
 //     let autocorr = Mat::from_fn(n, n, |i, j| (metric)(&x1[i], &x1[j]));
+//     println!("autocorr {:?}", autocorr[(22, 36)]);
 //     let dautocorrdp = Mat::from_fn(n, n, |i, j| (metric_deriv)(&x1[i], &x1[j]));
+//     println!("dautocorrdp {:?}", dautocorrdp[(22, 36)]);
 //     let y1 = Mat::from_fn(n, 1, |i, _| y1[i]);
 //     let chol_decomp = autocorr.cholesky(faer::Side::Lower).unwrap();
 //     let chol_res = chol_decomp.solve(&y1);
@@ -68,12 +72,24 @@ fn main() {
         .map(|(i, j)| TwoDpoint(i, j))
         .collect();
     let outputs: Vec<f64> = inputs.iter().map(lim_nonpoly).collect();
+    println!(
+        "metric {}",
+        Kernel::metric(&inputs[15], &inputs[20], &[1750.])
+    );
+    println!(
+        "deriv {:?}",
+        Kernel::deriv(&inputs[15], &inputs[20], &[1750.])
+    );
 
-    println!("{:?}, {:?}", &inputs[100], &inputs[99]);
-    println!("{}", Kernel::metric(&inputs[100], &inputs[99], &[1750.]));
-    println!("{}", inputs.len());
+    // println!("{:?}, {:?}", &inputs[100], &inputs[99]);
+    // println!("{}", Kernel::metric(&inputs[100], &inputs[99], &[1750.]));
+    // println!("{}", inputs.len());
+    // println!("grad original {:?}\n", gradient(1750., &inputs, &outputs));
     let proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
-    println!("{}", proc.log_marginal_likelihood().unwrap());
+
+    // println!("{}", proc.log_marginal_likelihood().unwrap());
+
+    println!("grad new {:?}", proc.gradient());
 
     let now = Instant::now();
     println!(

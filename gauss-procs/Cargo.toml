@@ -16,3 +16,6 @@ faer = { workspace = true }
 gauss-lib = { workspace = true }
 itertools = { workspace = true }
 ordered-float = { workspace = true }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "../katex-header.html"]

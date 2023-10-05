@@ -14,3 +14,6 @@ itertools = { workspace = true }
 ordered-float = { workspace = true }
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "../katex-header.html"]
