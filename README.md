@@ -8,5 +8,3 @@ To see documentation, given a rust compiler run
 `RUSTDOCFLAGS="--html-in-header path-to-your-header-file.html" cargo doc --no-deps`
 
 <https://www.sfu.ca/~ssurjano/rosen.html>
-
-ToDo : ignore *.out.* and flamegraph.svg
