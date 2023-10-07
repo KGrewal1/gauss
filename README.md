@@ -1,6 +1,7 @@
 # Gaussian Processes
 
 [![codecov](https://codecov.io/gh/KGrewal1/gauss/graph/badge.svg?token=LIMOLGUZF9)](https://codecov.io/gh/KGrewal1/gauss)
+[![Docs master](https://img.shields.io/static/v1?label=docs&message=master&color=5479ab)](https://kgrewal1.github.io/gauss/gauss_lib/)
 
 An attempt to implement simple gaussian process solvers in rust.
 MSRV is likely to be kept as the current stable version of Rustc for the next 6 months
