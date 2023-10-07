@@ -51,7 +51,7 @@
 
 use std::{cmp::Reverse, collections::BinaryHeap, f64::consts::PI, fmt::Debug};
 
-use dyn_stack::{GlobalPodBuffer, PodStack, ReborrowMut};
+use dyn_stack::{GlobalPodBuffer, PodStack};
 use faer::{solvers::Solver, Faer, Mat};
 use faer_cholesky::llt::{
     update::{insert_rows_and_cols_clobber, insert_rows_and_cols_clobber_req},
@@ -77,11 +77,10 @@ impl From<CholeskyError> for ProcessError {
     }
 }
 
-/// find x, the solution to ax=b where a is posiive definite
-/// takes cholesky decomposition of a as an input
-fn cholesky_solve(a: Mat<f64>, b: Mat<f64>) -> Mat<f64> {
-    let mut a = a;
-    let mut b = b;
+/// find x, the solution to AX=B where a is posiive definite
+/// takes cholesky decomposition of A as an input
+fn cholesky_solve(a: &Mat<f64>, b: &Mat<f64>) -> Mat<f64> {
+    let mut b = b.clone();
     let i = a.nrows();
     let j = b.ncols();
 
@@ -101,9 +100,9 @@ fn cholesky_solve(a: Mat<f64>, b: Mat<f64>) -> Mat<f64> {
 
 /// Trait bounds needed for a type $\text{T}$ to be a valid input for the Gaussian processes
 ///
-/// 1) There must be a covariance function defined on the type with some f64 hyperparameters
+/// 1. There must be a covariance function defined on the type with some f64 hyperparameters
 ///
-/// 2) There must be a derivative of this function in terms of the hyperparameters
+/// 2. There must be a derivative of this function in terms of the hyperparameters
 ///
 /// Note that the covariance function should never return NaN
 pub trait Kernel<const N: usize, Rhs = Self> {
@@ -184,26 +183,30 @@ where
     /// Updates a new Gaussian Process
     /// # Errors
     /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    /// # Panics
+    /// Panics if OOM on allocating additional memory for extending the decomposition
     pub fn update(&mut self, input: T, res: f64) -> Result<(), ProcessError> {
+        // add the new input and output
         self.inputs.push(input);
-        let x1 = &self.inputs.iter().collect::<Vec<&T>>();
         self.res.push(res);
+
+        // edit the autocorrelation matrix
         let n = self.inputs.len();
         self.autocorr.resize_with(n, n, |i, j| {
             Kernel::metric(&self.inputs[i], &self.inputs[j], &self.p)
                 + if i == j { self.var } else { 0. }
         });
+
+        // update the cholesky decomposition
         let mut new_col = self.autocorr.get(0..n, n - 1).to_owned();
         self.cholesky_l.resize_with(n, n, |_, _| 0.);
-        assert_eq!(self.autocorr, self.autocorr(x1));
-
         match insert_rows_and_cols_clobber(
             self.cholesky_l.as_mut(),
             n - 1,
             new_col.as_mut(),
-            Parallelism::Rayon(8),
+            Parallelism::Rayon(0),
             PodStack::new(&mut GlobalPodBuffer::new(
-                insert_rows_and_cols_clobber_req::<f64>(n, Parallelism::Rayon(8)).unwrap(),
+                insert_rows_and_cols_clobber_req::<f64>(n, Parallelism::Rayon(0)).unwrap(),
             )),
         ) {
             Ok(()) => Ok(()),
@@ -228,16 +231,19 @@ where
         // let x1 = &self.inputs.iter().collect::<Vec<&T>>();
         let y1 = &self.res;
         let n = y1.len();
-        let autocorr = &self.autocorr; //(x1)
+        // let autocorr = &self.autocorr; //(x1)
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
-        let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-            return Err(ProcessError::CholeskyFaiure);
-        };
+        // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
+        //     return Err(ProcessError::CholeskyFaiure);
+        // };
 
-        let chol_res = chol_decomp.solve(&y1);
+        // let chol_res = chol_decomp.solve(&y1);
+
+        let chol_res = cholesky_solve(&self.cholesky_l, &y1);
         let yky = (chol_res.transpose() * y1).get(0, 0).to_owned();
         // faster to compute determinant of already decomposed matrix:
-        let detk = chol_decomp.compute_l().determinant();
+        // the determinant is the square of the determinant of L
+        let detk = self.cholesky_l.determinant().powi(2);
         let ln2pi = (2. * PI).ln();
 
         // casting the integer size of matrix to float may lose precision
@@ -274,15 +280,18 @@ where
         let n = x1.len();
 
         // let autocorr = self.autocorr(x1);
-        let autocorr = &self.autocorr; //(x1)
-                                       // println!("autocorr {:?}", autocorr[(22, 36)]);
+        // let autocorr = &self.autocorr;
+        //(x1)
+        // println!("autocorr {:?}", autocorr[(22, 36)]);
 
         let y1 = Mat::from_fn(n, 1, |i, _| y1[i]);
-        let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-            return Err(ProcessError::CholeskyFaiure);
-        };
+        // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
+        //     return Err(ProcessError::CholeskyFaiure);
+        // };
 
-        let chol_res = chol_decomp.solve(&y1);
+        // let chol_res = chol_decomp.solve(&y1);
+
+        let chol_res = cholesky_solve(&self.cholesky_l, &y1);
 
         let mut deriv_mats = vec![Mat::<f64>::zeros(n, n); N];
         for (i, x_1) in x1.iter().enumerate() {
@@ -296,8 +305,9 @@ where
         let dautocorrdps: [Mat<f64>; N] = deriv_mats.try_into().unwrap();
         // println!("dautocorrdp {:?}", dautocorrdps[0][(22, 36)]);
 
-        let deltas =
-            dautocorrdps.map(|i| (&chol_res * chol_res.transpose()) * &i - chol_decomp.solve(i));
+        let deltas = dautocorrdps.map(|i| {
+            (&chol_res * chol_res.transpose()) * &i - cholesky_solve(&self.cholesky_l, &i)
+        });
 
         Ok(deltas.map(|delta| {
             let range = delta.ncols();
@@ -334,7 +344,7 @@ where
         // let n = x1.len();
 
         // let autocorr = self.autocorr(x1);
-        let autocorr = &self.autocorr; //(x1)
+        // let autocorr = &self.autocorr; //(x1)
         let crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
             Kernel::metric(&x1[i], &x2[j], &self.p)
         });
@@ -343,10 +353,14 @@ where
         });
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
         // println!("{:?}", autocorr);
-        let chol_res = match autocorr.cholesky(faer::Side::Lower) {
-            Ok(value) => value.solve(&crosscorr),
-            Err(_) => return Err(ProcessError::CholeskyFaiure),
-        };
+        // let chol_res_original = match autocorr.cholesky(faer::Side::Lower) {
+        //     Ok(value) => value.solve(&crosscorr),
+        //     Err(_) => return Err(ProcessError::CholeskyFaiure),
+        // };
+
+        let chol_res = cholesky_solve(&self.cholesky_l, &crosscorr);
+        // println!("{:?}", chol_res_original.ncols());
+        // println!("{:?}", chol_res.ncols());
 
         let mu = { chol_res.transpose() * &y1 };
         let sigma = { postcorr - chol_res.transpose() * crosscorr };
@@ -412,6 +426,7 @@ where
 mod tests {
 
     use super::*;
+    use faer::{assert_matrix_eq, mat};
     use itertools::Itertools;
 
     fn lim_nonpoly(x: &TwoDpoint) -> f64 {
@@ -522,5 +537,48 @@ mod tests {
         //     proc.interpolate(&[BadTwoDpoint(0.215, 0.255)]).unwrap_err(),
         //     ProcessError::CholeskyFaiure
         // )
+    }
+
+    #[test]
+    fn cholesky_solve_test() {
+        // check the decomposition is as expected
+        let initial = mat!([4., 12.], [12., 37.]);
+        let mut decomp = initial.cholesky(faer::Side::Lower).unwrap().compute_l();
+        let expected_res = mat!([2., 0.], [6., 1.]);
+        assert_matrix_eq!(decomp, expected_res, comp = float);
+
+        // check the solve works as expected
+        let target = mat!([1., 2.], [3., 4.]);
+        let res = cholesky_solve(&decomp, &target);
+        let expected_res = mat!([0.25, 6.5], [0., -2.]);
+        assert_matrix_eq!(res, expected_res, comp = float);
+
+        // check adding a column goes as expected
+        decomp.resize_with(3, 3, |_, _| 0.);
+        let mut new_col = mat!([-16.], [-43.], [98.]);
+
+        insert_rows_and_cols_clobber(
+            decomp.as_mut(),
+            2,
+            new_col.as_mut(),
+            Parallelism::Rayon(0),
+            PodStack::new(&mut GlobalPodBuffer::new(
+                insert_rows_and_cols_clobber_req::<f64>(3, Parallelism::Rayon(0)).unwrap(),
+            )),
+        )
+        .unwrap();
+        let expected_res = mat!([2., 0., 0.], [6., 1., 0.], [-8., 5., 3.]);
+        assert_matrix_eq!(decomp, expected_res, comp = float);
+
+        // check the solve works as expected
+        let target = mat!([3., 6., 2.], [4., 3., 6.], [0., 1., 3.]);
+        let res = cholesky_solve(&decomp, &target);
+        println!("{:?}", target);
+        let expected_res = mat!(
+            [3379. / 36., 4637. / 18., 427. / 18.],
+            [-230. / 9., -635. / 9., -55. / 9.],
+            [37. / 9., 100. / 9., 11. / 9.]
+        );
+        assert_matrix_eq!(res, expected_res, comp = float);
     }
 }
