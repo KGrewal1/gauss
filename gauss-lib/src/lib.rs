@@ -157,7 +157,7 @@ where
         let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
             return Err(ProcessError::CholeskyFaiure);
         };
-        // let chol_decomp = autocorr.cholesky(faer::Side::Lower).unwrap();
+
         let chol_res = chol_decomp.solve(&y1);
 
         let mut deriv_mats = vec![Mat::<f64>::zeros(n, n); N];

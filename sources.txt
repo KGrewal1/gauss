@@ -1,0 +1,12 @@
+Jan N. Fuhg, Michele Marino, Nikolaos Bouklas,
+Local approximate Gaussian process regression for data-driven constitutive models: development and comparison with neural networks,
+Computer Methods in Applied Mechanics and Engineering,
+Volume 388,
+2022,
+114217,
+ISSN 0045-7825,
+https://doi.org/10.1016/j.cma.2021.114217.
+
+Jones, M. R., et al. "Constraining Gaussian processes for grey-box acoustic emission source localisation." Proceedings of the 29th international conference on noise and vibration engineering (ISMA 2020). 2020.
+
+https://arxiv.org/abs/1402.0645
