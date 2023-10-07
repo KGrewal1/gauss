@@ -1,49 +1,21 @@
-// use faer::{solvers::Solver, Faer, Mat};
+use dyn_stack::{GlobalPodBuffer, PodStack};
+use faer::{mat, Faer, Mat}; //, solvers::Solver
+use faer_cholesky::llt::{
+    // compute::cholesky_in_place,
+    reconstruct::{reconstruct_lower, reconstruct_lower_req},
+    update::{
+        delete_rows_and_cols_clobber, delete_rows_and_cols_clobber_req,
+        insert_rows_and_cols_clobber, insert_rows_and_cols_clobber_req,
+    },
+};
+use faer_core::{MatRef, Parallelism};
 use gauss_lib::*;
 use itertools::Itertools;
 use std::time::Instant;
-// test function from sfu test functions
-// lim et al nonpolynomial function
-// fn lim_nonpoly(x: &(f64, f64)) -> f64 {
-//     ((30. + 5. * x.0 * (5. * x.0).sin()) * (4. + (-5. * x.1).exp()) - 100.) / 6.
-// }
 
 fn lim_nonpoly(x: &TwoDpoint) -> f64 {
     ((30. + 5. * x.0 * (5. * x.0).sin()) * (4. + (-5. * x.1).exp()) - 100.) / 6.
 }
-
-///
-/// Gradient of LML, for given metric function f(x1, x2, p)
-/// with input variables x, and outputs y is
-/// is Tr(y^(T)K-1^(T)K-1y - K-1 dK/dp)/2
-/// where K-1 is the inverse of the autocorrelation matrix
-// fn gradient(p: f64, x1: &[TwoDpoint], y1: &[f64]) -> f64 {
-//     let n = y1.len();
-//     let metric = |x: &TwoDpoint, y: &TwoDpoint| -> f64 {
-//         let z2 = p * (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
-//         (-0.5 * z2).exp()
-//     };
-//     let metric_deriv = |x: &TwoDpoint, y: &TwoDpoint| -> f64 {
-//         let z2 = p * (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
-//         let dz2dp = (((x.0 - y.0).powi(2)) + ((x.1 - y.1).powi(2)));
-//         -0.5 * dz2dp * (-0.5 * z2).exp()
-//     };
-//     println!("metric {}", metric(&x1[15], &x1[20]));
-//     println!("deriv {}", metric_deriv(&x1[15], &x1[20]));
-//     let autocorr = Mat::from_fn(n, n, |i, j| (metric)(&x1[i], &x1[j]));
-//     println!("autocorr {:?}", autocorr[(22, 36)]);
-//     let dautocorrdp = Mat::from_fn(n, n, |i, j| (metric_deriv)(&x1[i], &x1[j]));
-//     println!("dautocorrdp {:?}", dautocorrdp[(22, 36)]);
-//     let y1 = Mat::from_fn(n, 1, |i, _| y1[i]);
-//     let chol_decomp = autocorr.cholesky(faer::Side::Lower).unwrap();
-//     let chol_res = chol_decomp.solve(&y1);
-//     let aadk = (&chol_res * chol_res.transpose()) * &dautocorrdp;
-//     let kinvdk = chol_decomp.solve(&dautocorrdp);
-//     let delta = aadk - kinvdk;
-//     let range = delta.ncols();
-//     let trace = (0..range).map(|i| delta.get(i, i)).sum::<f64>();
-//     trace / 2.
-// }
 
 #[derive(Debug)]
 struct TwoDpoint(f64, f64);
@@ -61,8 +33,69 @@ impl Kernel<1> for TwoDpoint {
     }
 }
 
+fn reconstruct_matrix(cholesky_factor: MatRef<f64>) -> Mat<f64> {
+    let n = cholesky_factor.nrows();
+
+    let mut a_reconstructed = Mat::zeros(n, n);
+    reconstruct_lower(
+        a_reconstructed.as_mut(),
+        cholesky_factor,
+        Parallelism::Rayon(0),
+        PodStack::new(&mut GlobalPodBuffer::new(
+            reconstruct_lower_req::<f64>(n).unwrap(),
+        )),
+    );
+
+    a_reconstructed
+}
+
+#[allow(unreachable_code)]
 fn main() {
     // println!("{}", lim_nonpoly((0., 0.)));
+    // let mut matrix: Mat<f64> = mat![[4., 12., -16.], [12., 37., -43.], [-16., -43., 98.],];
+    let matrix: Mat<f64> = mat![[4., 12.], [12., 37.]];
+    println!("{:?}", matrix.get(0..2, 1));
+    // let mut decomp = matrix.cholesky(faer::Side::Lower).unwrap();
+    // cholesky_in_place(
+    //     matrix.as_mut(),
+    //     Parallelism::Rayon(0),
+    //     PodStack::new(&mut []),
+    //     Default::default(),
+    // )
+    // .unwrap();
+    // testing to dynamically update cholesky matrix
+    let matrix = matrix.cholesky(faer::Side::Lower).unwrap();
+    // println!("{:?}", matrix);
+    let mut matrix = matrix.compute_l();
+    println!("matrix {:?}", matrix);
+    println!("matrix {:?}", reconstruct_matrix(matrix.as_ref()));
+    matrix.resize_with(3, 3, |_, _| 0.);
+    println!("Here");
+    let mut new_col = mat![[-16., -43., 98.],].transpose().to_owned();
+    insert_rows_and_cols_clobber(
+        matrix.as_mut(),
+        2,
+        new_col.as_mut(),
+        Parallelism::Rayon(8),
+        PodStack::new(&mut GlobalPodBuffer::new(
+            insert_rows_and_cols_clobber_req::<f64>(4, Parallelism::Rayon(8)).unwrap(),
+        )),
+    )
+    .unwrap();
+    println!("matrix {:?}", matrix);
+    println!("matrix {:?}", reconstruct_matrix(matrix.as_ref()));
+    delete_rows_and_cols_clobber(
+        matrix.as_mut(),
+        &mut [0],
+        Parallelism::Rayon(8),
+        PodStack::new(&mut GlobalPodBuffer::new(
+            delete_rows_and_cols_clobber_req::<f64>(3, 1, Parallelism::Rayon(8)).unwrap(),
+        )),
+    );
+
+    println!("matrix {:?}", matrix);
+    println!("matrix {:?}", reconstruct_matrix(matrix.as_ref()));
+    panic!();
     let n: usize = 80;
     let range: Vec<f64> = (0..(n + 1)).map(|i| i as f64 / (n as f64)).collect();
     let inputs: Vec<TwoDpoint> = range
@@ -91,13 +124,13 @@ fn main() {
 
     println!("grad new {:?}", proc.gradient());
 
-    let now = Instant::now();
-    println!(
-        "{:?}",
-        proc.smart_interpolate(&TwoDpoint(0.215, 0.255)).unwrap()
-    );
-    let elapsed = now.elapsed();
-    println!("Elapsed, trunc: {:.2?}", elapsed);
+    // let now = Instant::now();
+    // println!(
+    //     "{:?}",
+    //     proc.smart_interpolate(&TwoDpoint(0.215, 0.255)).unwrap()
+    // );
+    // let elapsed = now.elapsed();
+    // println!("Elapsed, trunc: {:.2?}", elapsed);
 
     let now = Instant::now();
     println!(
@@ -116,21 +149,27 @@ fn main() {
     let elapsed = now.elapsed();
     println!("Elapsed, non trunc: {:.2?}", elapsed);
 
-    let now = Instant::now();
+    // let now = Instant::now();
 
-    println!(
-        "{:?}",
-        proc.interpolate_one(&TwoDpoint(0.215, 0.255)).unwrap()
-    );
-    let elapsed = now.elapsed();
-    println!("Elapsed, trunc: {:.2?}", elapsed);
+    // println!(
+    //     "{:?}",
+    //     proc.interpolate_one(&TwoDpoint(0.215, 0.255)).unwrap()
+    // );
+    // let elapsed = now.elapsed();
+    // println!("Elapsed, trunc: {:.2?}", elapsed);
 
-    let predicted = *proc
-        .interpolate_one(&TwoDpoint(0.215, 0.255))
+    // let predicted = *proc
+    //     .interpolate_one(&TwoDpoint(0.215, 0.255))
+    //     .unwrap()
+    //     .0
+    //     .get(0, 0);
+
+    let predicted = *(proc
+        .dyn_smart_interpolate(&TwoDpoint(0.215, 0.255), 100)
         .unwrap()
-        .0
+        .0)
         .get(0, 0);
 
-    println!("{:?}", lim_nonpoly(&TwoDpoint(0.215, 0.255)));
+    // println!("{:?}", lim_nonpoly(&TwoDpoint(0.215, 0.255)));
     println!("{}", lim_nonpoly(&TwoDpoint(0.215, 0.255)) - predicted)
 }

@@ -1,4 +1,43 @@
-//! If otherwise unstated, equation and page numbers refer to Gaussian Processes for Machine Learning, C. E. Rasmussen & C. K. I. Williams, 2006
+//! This library implements Gaussian processes (GP) for use in Bayesian Regression
+//! with an aim of use in minimisation of chemical structures.
+//!
+//! GP regression treats the unknown function values at all training points as a
+//! Gaussian Process fully characterised by some arbitrary covariance function or
+//! kernel between points $x_{1}$ and $x_{2}$.
+//!
+//! The output is modelled as a stochastic process:
+//!
+//! $ Y(x) = \mu(x) + Z(x)$
+//!
+//! where $\mu$ is the mean and $Z(x)$ realization of the stochastic process
+//!
+//! # Implementation
+//!
+//! * Based of [Faer](https://github.com/sarah-ek/faer-rs) to provide linear algebra subroutine
+//! * GP mean currently must be 0
+//! * GP correlation function can be arbitrary, with parameterisation
+//! * Dimensionality issue : scales as $O(n^{3})$ in size of training data
+//! * 'Focused' regression, utilising only training points most similar to test point to reduce complexity
+//!
+//!
+//! # Reference:
+//!
+//! Gaussian Processes for Machine Learning, C. E. Rasmussen & C. K. I. Williams, 2006
+//!
+//! Jones, M. R., et al. "Constraining Gaussian processes for grey-box acoustic emission source localisation."
+//! Proceedings of the 29th international conference on noise and vibration engineering (ISMA 2020). 2020.
+//!
+//! Jan N. Fuhg, Michele Marino, Nikolaos Bouklas,
+//! Local approximate Gaussian process regression for data-driven constitutive models: development and comparison with neural networks,
+//! Computer Methods in Applied Mechanics and Engineering,
+//! Volume 388,
+//! 2022,
+//! 114217,
+//! ISSN 0045-7825,
+//! https://doi.org/10.1016/j.cma.2021.114217.
+//!
+//! arXiv:1402.0645 [cs.LG]
+//!   https://doi.org/10.48550/arXiv.1402.0645
 
 #![warn(
     clippy::pedantic,
@@ -7,22 +46,57 @@
     clippy::complexity,
     clippy::style
 )]
+#![forbid(unsafe_code)]
 #![allow(clippy::doc_markdown)]
 
 use std::{cmp::Reverse, collections::BinaryHeap, f64::consts::PI, fmt::Debug};
 
+use dyn_stack::{GlobalPodBuffer, PodStack, ReborrowMut};
 use faer::{solvers::Solver, Faer, Mat};
+use faer_cholesky::llt::{
+    update::{insert_rows_and_cols_clobber, insert_rows_and_cols_clobber_req},
+    CholeskyError,
+};
+use faer_core::Parallelism;
 // use nalgebra::{Dyn, Matrix, VecStorage};
 use ordered_float::NotNan;
 // use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 /// Error in the GP
 pub enum ProcessError {
     /// the input arrays are of different length
     MismatchedInputs,
     /// cholesky decomposition failure
     CholeskyFaiure,
+}
+
+impl From<CholeskyError> for ProcessError {
+    fn from(_e: CholeskyError) -> ProcessError {
+        ProcessError::CholeskyFaiure
+    }
+}
+
+/// find x, the solution to ax=b where a is posiive definite
+/// takes cholesky decomposition of a as an input
+fn cholesky_solve(a: Mat<f64>, b: Mat<f64>) -> Mat<f64> {
+    let mut a = a;
+    let mut b = b;
+    let i = a.nrows();
+    let j = b.ncols();
+
+    faer_cholesky::llt::solve::solve_in_place_with_conj(
+        a.as_ref(),
+        faer_core::Conj::No,
+        b.as_mut(),
+        Parallelism::Rayon(0),
+        PodStack::new(&mut GlobalPodBuffer::new(
+            faer_cholesky::llt::solve::solve_in_place_req::<f64>(j, i, Parallelism::Rayon(0))
+                .unwrap(),
+        )),
+    );
+
+    b
 }
 
 /// Trait bounds needed for a type $\text{T}$ to be a valid input for the Gaussian processes
@@ -59,6 +133,7 @@ pub trait Kernel<const N: usize, Rhs = Self> {
 /// (p19) and slightly faster for most (direct compuation of the used matrix as opposed to computation of the inverse and then matrix multiplication).
 ///
 /// As the covariance ought to be symmetric, this also leads to the property that $K^{-1}$ is also symmetric
+// #[allow(dead_code)] // update autocorr decomp instead of recalculating
 pub struct GaussProcs<const N: usize, T>
 where
     T: Kernel<N>,
@@ -67,25 +142,72 @@ where
     res: Vec<f64>,
     var: f64,
     p: [f64; N],
+    autocorr: Mat<f64>,
+    cholesky_l: Mat<f64>,
 }
 
 impl<const N: usize, T> GaussProcs<N, T>
 where
     T: Kernel<N>,
 {
+    fn autocorr(&self, x1: &[&T]) -> Mat<f64> {
+        let n = x1.len();
+        Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], &self.p))
+            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. })
+    }
+
     /// Creates a new Gaussian Process
     /// # Errors
     /// Returns an error if the number of inputs and the number of outputs provided are non equal
     pub fn new(inputs: Vec<T>, res: Vec<f64>, var: f64, p: [f64; N]) -> Result<Self, ProcessError> {
         if inputs.len() == res.len() {
+            let n = res.len();
+            let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&inputs[i], &inputs[j], &p))
+                + Mat::from_fn(n, n, |i, j| if i == j { var } else { 0. });
+            let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
+                return Err(ProcessError::CholeskyFaiure);
+            };
+            let cholesky_l = chol_decomp.compute_l();
             Ok(GaussProcs {
                 inputs,
                 res,
                 var,
                 p,
+                autocorr,
+                cholesky_l,
             })
         } else {
             Err(ProcessError::MismatchedInputs)
+        }
+    }
+
+    /// Updates a new Gaussian Process
+    /// # Errors
+    /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    pub fn update(&mut self, input: T, res: f64) -> Result<(), ProcessError> {
+        self.inputs.push(input);
+        let x1 = &self.inputs.iter().collect::<Vec<&T>>();
+        self.res.push(res);
+        let n = self.inputs.len();
+        self.autocorr.resize_with(n, n, |i, j| {
+            Kernel::metric(&self.inputs[i], &self.inputs[j], &self.p)
+                + if i == j { self.var } else { 0. }
+        });
+        let mut new_col = self.autocorr.get(0..n, n - 1).to_owned();
+        self.cholesky_l.resize_with(n, n, |_, _| 0.);
+        assert_eq!(self.autocorr, self.autocorr(x1));
+
+        match insert_rows_and_cols_clobber(
+            self.cholesky_l.as_mut(),
+            n - 1,
+            new_col.as_mut(),
+            Parallelism::Rayon(8),
+            PodStack::new(&mut GlobalPodBuffer::new(
+                insert_rows_and_cols_clobber_req::<f64>(n, Parallelism::Rayon(8)).unwrap(),
+            )),
+        ) {
+            Ok(()) => Ok(()),
+            Err(_) => Err(ProcessError::CholeskyFaiure),
         }
     }
 
@@ -102,15 +224,16 @@ where
     ///
     /// Error if the matrix is non Cholesky decomposable
     pub fn log_marginal_likelihood(&self) -> Result<f64, ProcessError> {
-        let x1 = &self.inputs;
+        // let x1 = &self.inputs;
+        // let x1 = &self.inputs.iter().collect::<Vec<&T>>();
         let y1 = &self.res;
         let n = y1.len();
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&x1[i], &x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
+        let autocorr = &self.autocorr; //(x1)
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
         let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
             return Err(ProcessError::CholeskyFaiure);
         };
+
         let chol_res = chol_decomp.solve(&y1);
         let yky = (chol_res.transpose() * y1).get(0, 0).to_owned();
         // faster to compute determinant of already decomposed matrix:
@@ -145,13 +268,14 @@ where
     ///
     /// Relies on a Vector with $N$ elements being cast into an array with $N$ :  should always hold
     pub fn gradient(&self) -> Result<[f64; N], ProcessError> {
-        let x1 = &self.inputs;
+        // let x1 = &self.inputs;
+        let x1 = &self.inputs.iter().collect::<Vec<&T>>();
         let y1 = &self.res;
         let n = x1.len();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&x1[i], &x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
-        println!("autocorr {:?}", autocorr[(22, 36)]);
+        // let autocorr = self.autocorr(x1);
+        let autocorr = &self.autocorr; //(x1)
+                                       // println!("autocorr {:?}", autocorr[(22, 36)]);
 
         let y1 = Mat::from_fn(n, 1, |i, _| y1[i]);
         let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
@@ -163,14 +287,14 @@ where
         let mut deriv_mats = vec![Mat::<f64>::zeros(n, n); N];
         for (i, x_1) in x1.iter().enumerate() {
             for (j, x_2) in x1.iter().enumerate() {
-                let derivs = Kernel::deriv(x_1, x_2, &self.p);
+                let derivs = Kernel::deriv(*x_1, *x_2, &self.p);
                 for (n, d) in derivs.iter().enumerate() {
                     deriv_mats[n][(i, j)] = *d;
                 }
             }
         }
         let dautocorrdps: [Mat<f64>; N] = deriv_mats.try_into().unwrap();
-        println!("dautocorrdp {:?}", dautocorrdps[0][(22, 36)]);
+        // println!("dautocorrdp {:?}", dautocorrdps[0][(22, 36)]);
 
         let deltas =
             dautocorrdps.map(|i| (&chol_res * chol_res.transpose()) * &i - chol_decomp.solve(i));
@@ -205,12 +329,12 @@ where
     /// # Errors
     /// Error if the matrix is non Cholesky decomposable
     pub fn interpolate(&self, x2: &[T]) -> Result<(Mat<f64>, Mat<f64>), ProcessError> {
-        let x1 = &self.inputs;
+        let x1 = &self.inputs; //.iter().collect::<Vec<&T>>()
         let y1 = &self.res;
-        let n = x1.len();
+        // let n = x1.len();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&x1[i], &x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
+        // let autocorr = self.autocorr(x1);
+        let autocorr = &self.autocorr; //(x1)
         let crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
             Kernel::metric(&x1[i], &x2[j], &self.p)
         });
@@ -263,12 +387,12 @@ where
 
         let indices: Vec<usize> = heap.into_vec().iter().map(|&Reverse((_, i))| i).collect();
 
-        println!("sorted");
+        let n = indices.len();
+
         let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
         let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
+        let autocorr = self.autocorr(&x1);
         let crosscorr = Mat::from_fn(n, 1, |i, _| Kernel::metric(x1[i], x2, &self.p));
         let postcorr = Mat::from_fn(1, 1, |_, _| Kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
@@ -309,8 +433,7 @@ where
         let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
         let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
         let n = x1.len();
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
+        let autocorr = self.autocorr(&x1);
         let crosscorr = Mat::from_fn(n, 1, |i, _| Kernel::metric(x1[i], x2, &self.p));
         let postcorr = Mat::from_fn(1, 1, |_, _| Kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
@@ -352,12 +475,12 @@ where
 
         let indices: Vec<usize> = heap.into_vec().iter().map(|&Reverse((_, i))| i).collect();
 
-        println!("sorted");
+        // println!("sorted");
+        let n = indices.len();
         let x1: Vec<&T> = indices.iter().map(|i| &self.inputs[*i]).collect();
         let y1: Vec<&f64> = indices.iter().map(|i| &self.res[*i]).collect();
 
-        let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], &self.p))
-            + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. });
+        let autocorr = self.autocorr(&x1);
         let crosscorr = Mat::from_fn(n, 1, |i, _| Kernel::metric(x1[i], x2, &self.p));
         let postcorr = Mat::from_fn(1, 1, |_, _| Kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
@@ -373,62 +496,119 @@ where
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::{
-//         cmp::{Ordering, Reverse},
-//         collections::BinaryHeap,
-//     };
+#[cfg(test)]
+mod tests {
 
-//     use assert_approx_eq::*;
-//     use faer::{mat, solvers::Solver, Faer, Mat};
-//     use ordered_float::NotNan;
-//     // use super::*;
-//     // use serde_json::Result;
-//     #[test]
-//     fn it_works() {
-//         let m1 = Mat::from_fn(3, 1, |i, j| i as f64 + j as f64);
-//         let a = mat![[7., 2., 1.], [0., 3., -1.], [3., 4., 2f64],];
-//         let decomp = a.partial_piv_lu();
-//         println!("{}", a.determinant());
-//         println!("{:?}", decomp.row_permutation());
-//         println!("{:?}", decomp.compute_l());
-//         println!("{:?}", decomp.compute_u());
-//         // let decomp = a.cholesky(faer::Side::Lower).unwrap();
-//         // let sol = decomp.solve(&m1);
-//         // let round = a * sol;
-//         // for i in 0..3 {
-//         //     assert_approx_eq!(m1.get(i, 0), round.get(i, 0))
-//         // }
-//         assert!(1 == 2);
-//         // let mut list = vec![
-//         //     NotNan::new(5.).unwrap(),
-//         //     NotNan::new(6.).unwrap(),
-//         //     NotNan::new(2.).unwrap(),
-//         //     NotNan::new(511.).unwrap(),
-//         //     NotNan::new(23.).unwrap(),
-//         //     NotNan::new(1.).unwrap(),
-//         //     NotNan::new(8.).unwrap(),
-//         // ];
-//         // // list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-//         // // list.iter();
-//         // // println!("{:?}", list);
-//         // // panic!()
-//         // let n = 3; // Replace 3 with any number you want
-//         // let mut heap = BinaryHeap::new();
+    use super::*;
+    use itertools::Itertools;
 
-//         // list.iter().enumerate().for_each(|(i, &num)| {
-//         //     heap.push(Reverse((num, i)));
-//         //     if heap.len() > n {
-//         //         heap.pop();
-//         //     }
-//         // });
+    fn lim_nonpoly(x: &TwoDpoint) -> f64 {
+        ((30. + 5. * x.0 * (5. * x.0).sin()) * (4. + (-5. * x.1).exp()) - 100.) / 6.
+    }
 
-//         // let mut largest = heap.into_vec();
-//         // largest.sort();
+    fn lim_nonpoly_bad(x: &BadTwoDpoint) -> f64 {
+        ((30. + 5. * x.0 * (5. * x.0).sin()) * (4. + (-5. * x.1).exp()) - 100.) / 6.
+    }
 
-//         // let indices_of_largest: Vec<usize> = largest.iter().map(|&Reverse((_, i))| i).collect();
-//         // println!("{:?}", indices_of_largest);
-//         panic!()
-//     }
-// }
+    #[derive(Debug)]
+    struct TwoDpoint(f64, f64);
+
+    impl Kernel<1> for TwoDpoint {
+        fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+            let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+            (-0.5 * z2).exp()
+        }
+
+        fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+            let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+            let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+            [-0.5 * dz2dp * (-0.5 * z2).exp()]
+        }
+    }
+
+    #[derive(Debug)]
+    struct BadTwoDpoint(f64, f64);
+
+    impl Kernel<1> for BadTwoDpoint {
+        fn metric(&self, _rhs: &Self, _param: &[f64; 1]) -> f64 {
+            1.
+        }
+
+        fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+            let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+            let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+            [-0.5 * dz2dp * (-0.5 * z2).exp()]
+        }
+    }
+
+    #[test]
+    fn full_test() {
+        let n: usize = 10;
+        let range: Vec<f64> = (0..(n + 1)).map(|i| i as f64 / (n as f64)).collect();
+        let inputs: Vec<TwoDpoint> = range
+            .clone()
+            .into_iter()
+            .cartesian_product(range)
+            .map(|(i, j)| TwoDpoint(i, j))
+            .collect();
+        let outputs: Vec<f64> = inputs.iter().map(lim_nonpoly).collect();
+
+        let mut proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
+        proc.gradient().unwrap();
+        proc.log_marginal_likelihood().unwrap();
+        proc.dyn_smart_interpolate(&TwoDpoint(0.215, 0.255), 6561)
+            .unwrap();
+        proc.interpolate(&[TwoDpoint(0.215, 0.255)]).unwrap();
+        let new_point = TwoDpoint(0.215, 0.255);
+        let new_res = lim_nonpoly(&new_point);
+        proc.update(new_point, new_res).unwrap();
+    }
+
+    #[test]
+    fn check_len() {
+        let n: usize = 10;
+        let range: Vec<f64> = (0..(n + 1)).map(|i| i as f64 / (n as f64)).collect();
+        let inputs: Vec<TwoDpoint> = range
+            .clone()
+            .into_iter()
+            .cartesian_product(range)
+            .map(|(i, j)| TwoDpoint(i, j))
+            .collect();
+        let mut outputs = inputs.iter().map(lim_nonpoly).collect::<Vec<f64>>();
+
+        outputs.pop();
+        assert_eq!(
+            GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap_err(),
+            ProcessError::MismatchedInputs
+        )
+    }
+
+    #[test]
+    fn singular_mat() {
+        let n: usize = 10;
+        let range: Vec<f64> = (0..(n + 1)).map(|i| i as f64 / (n as f64)).collect();
+        let inputs: Vec<BadTwoDpoint> = range
+            .clone()
+            .into_iter()
+            .cartesian_product(range)
+            .map(|(i, j)| BadTwoDpoint(i, j))
+            .collect();
+        let outputs = inputs.iter().map(lim_nonpoly_bad).collect::<Vec<f64>>();
+
+        // let proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
+
+        assert_eq!(
+            GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap_err(),
+            ProcessError::CholeskyFaiure
+        );
+        // assert_eq!(
+        //     proc.log_marginal_likelihood().unwrap_err(),
+        //     ProcessError::CholeskyFaiure
+        // );
+        // assert_eq!(proc.gradient().unwrap_err(), ProcessError::CholeskyFaiure);
+        // assert_eq!(
+        //     proc.interpolate(&[BadTwoDpoint(0.215, 0.255)]).unwrap_err(),
+        //     ProcessError::CholeskyFaiure
+        // )
+    }
+}

@@ -2,18 +2,33 @@
 name = "gauss-lib"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kirpal Grewal <kirpal@grewal.com>"]
+description = "A library for gaussian processes"
+readme = "../README.md"
+license = "MIT"
+repository = "https://github.com/KGrewal1/gauss"
+keywords = ["machine-learning", "gaussian-process", "kriging", "optimisation"]
+categories = ["algorithms", "mathematics", "science", "optimisation"]
+
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
+# serde = { workspace = true }
+# serde_json = { workspace = true }
 faer = { workspace = true }
-nalgebra = { workspace = true }
-itertools = { workspace = true }
+faer-core = { workspace = true }
+faer-cholesky = { workspace = true }
+dyn-stack = { workspace = true }
+
+# nalgebra = { workspace = true }
+# itertools = { workspace = true }
 ordered-float = { workspace = true }
+
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+itertools = { workspace = true }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "../katex-header.html"]

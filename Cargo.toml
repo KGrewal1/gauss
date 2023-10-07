@@ -4,22 +4,33 @@ resolver = "2"
 members = [
 	"gauss-procs",
 	"gauss-lib",
+	"rosenbrock"
 ]
 
 [workspace.dependencies]
 gauss-lib = { version = "0.1.0", path = "./gauss-lib" }
 
-argmin = "0.8.1"
-csv = "1.2.2"
-faer = {version = "0.11", features = ["ndarray", "nalgebra"]}
+# argmin = "0.8.1"
+# csv = "1.2.2"#
+# MIT licensed
+faer = {version = "0.12"} # , features = ["ndarray", "nalgebra"]
+faer-core = {version = "0.12"} # , features = ["ndarray", "nalgebra"]
+faer-cholesky = {version = "0.12"} # , features = ["ndarray", "nalgebra"]
+dyn-stack = "0.9.1"
+# MIT / Apache
 itertools = "0.11.0"
-nalgebra = { version = "0.32.3", features = ["serde-serialize"] }
+# nalgebra = { version = "0.32.3", features = ["serde-serialize"] }
+# MIT
 ordered-float = "4.1.0"
-plotly = "0.8.3"
+# plotly = "0.8.3"
+# MIT / Apache
 rayon  = "1.7.0"
 rand  = { version = "0.8.5", features = ["small_rng"] }
-serde = { version = "1.0.164", features = ["derive"] }
-serde_json = "1.0.107"
+rand_chacha = "0.3.1"
+# MIT
+statrs = "0.16.0"
+# serde = { version = "1.0.164", features = ["derive"] }
+# serde_json = "1.0.107"
 
 
 [profile.release]
