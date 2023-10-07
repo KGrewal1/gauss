@@ -3,3 +3,5 @@ Cargo.lock
 gauss-procs-x*
 proc*txt
 *.data*
+*.out*
+flamegraph.svg
