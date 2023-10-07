@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"gauss_procs":[["impl Kernel&lt;1, <a class=\"struct\" href=\"gauss_procs/struct.TwoDpoint.html\" title=\"struct gauss_procs::TwoDpoint\">TwoDpoint</a>&gt; for <a class=\"struct\" href=\"gauss_procs/struct.TwoDpoint.html\" title=\"struct gauss_procs::TwoDpoint\">TwoDpoint</a>"]],
+"rosenbrock":[["impl <a class=\"trait\" href=\"gauss_lib/trait.Kernel.html\" title=\"trait gauss_lib::Kernel\">Kernel</a>&lt;1, <a class=\"struct\" href=\"rosenbrock/struct.TwoDpoint.html\" title=\"struct rosenbrock::TwoDpoint\">TwoDpoint</a>&gt; for <a class=\"struct\" href=\"rosenbrock/struct.TwoDpoint.html\" title=\"struct rosenbrock::TwoDpoint\">TwoDpoint</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

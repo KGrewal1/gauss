@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["gauss_lib","gauss_procs","rosenbrock"];

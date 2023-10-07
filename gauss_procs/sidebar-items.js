@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["lim_nonpoly","main","reconstruct_matrix"],"struct":["TwoDpoint"]};
