@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `gauss-lib/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gauss_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (960754090 2023-10-06)" data-channel="nightly" data-search-js="search-5f5ec5419eadd0c9.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `gauss-lib/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gauss_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (97c81e1b5 2023-10-07)" data-channel="nightly" data-search-js="search-5f5ec5419eadd0c9.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.js"                  integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/contrib/auto-render.min.js"    integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
 <script>
@@ -597,6 +597,37 @@
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This library implements Gaussian processes (GP) for use in Bayesian Regression
 //! with an aim of use in minimisation of chemical structures.
 //!
@@ -619,7 +650,7 @@
 //! * &#39;Focused&#39; regression, utilising only training points most similar to test point to reduce complexity
 //!
 //!
-//! # Reference:
+//! # Reference
 //!
 //! Gaussian Processes for Machine Learning, C. E. Rasmussen &amp; C. K. I. Williams, 2006
 //!
@@ -633,10 +664,14 @@
 //! 2022,
 //! 114217,
 //! ISSN 0045-7825,
-//! https://doi.org/10.1016/j.cma.2021.114217.
+//! &lt;https://doi.org/10.1016/j.cma.2021.114217&gt;.
 //!
 //! arXiv:1402.0645 [cs.LG]
-//!   https://doi.org/10.48550/arXiv.1402.0645
+//! &lt;https://doi.org/10.48550/arXiv.1402.0645&gt;
+//!
+//! Lafage, R., (2022). egobox, a Rust toolbox for efficient global optimization.
+//! Journal of Open Source Software, 7(78), 4737,
+//! &lt;https://doi.org/10.21105/joss.04737&gt;
 
 </span><span class="attr">#![warn(
     clippy::pedantic,
@@ -704,6 +739,27 @@
 /// 2. There must be a derivative of this function in terms of the hyperparameters
 ///
 /// Note that the covariance function should never return NaN
+///
+/// # Examples
+///
+/// Defining the RBF Kernel on a 2-D point
+/// ```
+/// use gauss_lib::Kernel;
+///
+/// pub struct TwoDpoint(f64, f64);
+///
+/// impl Kernel&lt;1&gt; for TwoDpoint {
+///     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+///         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+///         (-0.5 * z2).exp()
+///     }
+///     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+///         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+///         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+///         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+///     }
+/// }
+/// ```
 </span><span class="kw">pub trait </span>Kernel&lt;<span class="kw">const </span>N: usize, Rhs = <span class="self">Self</span>&gt; {
     <span class="doccomment">/// The covariance function $\phi$ on the type $\text{T} --- $
     /// $\phi: (\text{T}, \text{T}, \[\text{f64; \text{N}}\]) \to \text{f64}$
@@ -731,7 +787,6 @@
 /// (p19) and slightly faster for most (direct compuation of the used matrix as opposed to computation of the inverse and then matrix multiplication).
 ///
 /// As the covariance ought to be symmetric, this also leads to the property that $K^{-1}$ is also symmetric
-</span><span class="comment">// #[allow(dead_code)] // update autocorr decomp instead of recalculating
 </span><span class="kw">pub struct </span>GaussProcs&lt;<span class="kw">const </span>N: usize, T&gt;
 <span class="kw">where
     </span>T: Kernel&lt;N&gt;,
@@ -748,10 +803,17 @@
 <span class="kw">where
     </span>T: Kernel&lt;N&gt;,
 {
-    <span class="kw">fn </span>autocorr(<span class="kw-2">&amp;</span><span class="self">self</span>, x1: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>T]) -&gt; Mat&lt;f64&gt; {
+    <span class="doccomment">/// Calculate the autocorrelation matrix
+    </span><span class="kw">fn </span>autocorr(<span class="kw-2">&amp;</span><span class="self">self</span>, x1: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>T]) -&gt; Mat&lt;f64&gt; {
         <span class="kw">let </span>n = x1.len();
         Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], <span class="kw-2">&amp;</span><span class="self">self</span>.p))
             + Mat::from_fn(n, n, |i, j| <span class="kw">if </span>i == j { <span class="self">self</span>.var } <span class="kw">else </span>{ <span class="number">0. </span>})
+    }
+
+    <span class="doccomment">/// Internal wrapper around cholesky solve
+    /// to ensure arguments are ordered correct
+    </span><span class="kw">fn </span>cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>, b: <span class="kw-2">&amp;</span>Mat&lt;f64&gt;) -&gt; Mat&lt;f64&gt; {
+        cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, b)
     }
 
     <span class="doccomment">/// Creates a new Gaussian Process
@@ -838,8 +900,8 @@
 
         // let chol_res = chol_decomp.solve(&amp;y1);
 
-        </span><span class="kw">let </span>chol_res = cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, <span class="kw-2">&amp;</span>y1);
-        <span class="kw">let </span>yky = (chol_res.transpose() * y1).get(<span class="number">0</span>, <span class="number">0</span>).to_owned();
+        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1); <span class="comment">//cholesky_solve(&amp;self.cholesky_l, &amp;y1);
+        </span><span class="kw">let </span>yky = (chol_res.transpose() * y1).get(<span class="number">0</span>, <span class="number">0</span>).to_owned();
         <span class="comment">// faster to compute determinant of already decomposed matrix:
         // the determinant is the square of the determinant of L
         </span><span class="kw">let </span>detk = <span class="self">self</span>.cholesky_l.determinant().powi(<span class="number">2</span>);
@@ -861,7 +923,7 @@
     ///
     /// where $\phi&#39;$ is obtained from [Kernel::deriv]
     ///
-    /// TODO
+    /// # TODO
     ///
     /// 1) investigate different groupings of the Cholesky solve and / or try explicit inversion for speed
     ///
@@ -890,9 +952,9 @@
 
         // let chol_res = chol_decomp.solve(&amp;y1);
 
-        </span><span class="kw">let </span>chol_res = cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, <span class="kw-2">&amp;</span>y1);
+        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1); <span class="comment">// cholesky_solve(&amp;self.cholesky_l, &amp;y1);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>deriv_mats = <span class="macro">vec!</span>[Mat::&lt;f64&gt;::zeros(n, n); N];
+        </span><span class="kw">let </span><span class="kw-2">mut </span>deriv_mats = <span class="macro">vec!</span>[Mat::&lt;f64&gt;::zeros(n, n); N];
         <span class="kw">for </span>(i, x_1) <span class="kw">in </span>x1.iter().enumerate() {
             <span class="kw">for </span>(j, x_2) <span class="kw">in </span>x1.iter().enumerate() {
                 <span class="kw">let </span>derivs = Kernel::deriv(<span class="kw-2">*</span>x_1, <span class="kw-2">*</span>x_2, <span class="kw-2">&amp;</span><span class="self">self</span>.p);
@@ -957,7 +1019,7 @@
         //     Err(_) =&gt; return Err(ProcessError::CholeskyFaiure),
         // };
 
-        </span><span class="kw">let </span>chol_res = cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, <span class="kw-2">&amp;</span>crosscorr);
+        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>crosscorr);
         <span class="comment">// println!(&quot;{:?}&quot;, chol_res_original.ncols());
         // println!(&quot;{:?}&quot;, chol_res.ncols());
 
