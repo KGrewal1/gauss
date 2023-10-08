@@ -98,6 +98,7 @@ fn main() {
                 )
             })
             .collect();
+        println!("{:?}", res[224]);
         res.sort_by(|a, b| (b.4).partial_cmp(&(a.4)).unwrap());
         let next = res.pop().unwrap();
         println!("Next {:?}", next);

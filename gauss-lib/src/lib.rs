@@ -194,9 +194,10 @@ where
             let n = res.len();
             let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&inputs[i], &inputs[j], &p))
                 + Mat::from_fn(n, n, |i, j| if i == j { var } else { 0. });
-            let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-                return Err(ProcessError::CholeskyFaiure);
-            };
+            // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
+            //     return Err(ProcessError::CholeskyFaiure);
+            // };
+            let chol_decomp = autocorr.cholesky(faer::Side::Lower)?;
             let cholesky_l = chol_decomp.compute_l();
             Ok(GaussProcs {
                 inputs,
@@ -231,7 +232,7 @@ where
         // update the cholesky decomposition
         let mut new_col = self.autocorr.get(0..n, n - 1).to_owned();
         self.cholesky_l.resize_with(n, n, |_, _| 0.);
-        match insert_rows_and_cols_clobber(
+        Ok(insert_rows_and_cols_clobber(
             self.cholesky_l.as_mut(),
             n - 1,
             new_col.as_mut(),
@@ -239,10 +240,7 @@ where
             PodStack::new(&mut GlobalPodBuffer::new(
                 insert_rows_and_cols_clobber_req::<f64>(n, Parallelism::Rayon(0)).unwrap(),
             )),
-        ) {
-            Ok(()) => Ok(()),
-            Err(_) => Err(ProcessError::CholeskyFaiure),
-        }
+        )?)
     }
 
     /// Calculate the log marginal likelihood
@@ -442,10 +440,11 @@ where
         let postcorr = Mat::from_fn(1, 1, |_, _| Kernel::metric(x2, x2, &self.p));
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
 
-        let chol_res = match autocorr.cholesky(faer::Side::Lower) {
-            Ok(value) => value.solve(&crosscorr),
-            Err(_) => return Err(ProcessError::CholeskyFaiure),
-        };
+        let chol_res = autocorr.cholesky(faer::Side::Lower)?.solve(&crosscorr);
+        // let chol_res = match autocorr.cholesky(faer::Side::Lower) {
+        //     Ok(value) => value.solve(&crosscorr),
+        //     Err(_) => return Err(ProcessError::CholeskyFaiure),
+        // };
 
         let mu = { chol_res.transpose() * &y1 };
         let sigma = { postcorr - chol_res.transpose() * crosscorr };
@@ -514,7 +513,7 @@ mod tests {
         let mut proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
         proc.gradient().unwrap();
         proc.log_marginal_likelihood().unwrap();
-        proc.dyn_smart_interpolate(&TwoDpoint(0.215, 0.255), 6561)
+        proc.dyn_smart_interpolate(&TwoDpoint(0.215, 0.255), 15)
             .unwrap();
         proc.interpolate(&[TwoDpoint(0.215, 0.255)]).unwrap();
         let new_point = TwoDpoint(0.215, 0.255);
@@ -522,6 +521,7 @@ mod tests {
         proc.update(new_point, new_res).unwrap();
     }
 
+    // mismatched size of inputs results in an error
     #[test]
     fn check_len() {
         let n: usize = 10;
@@ -541,6 +541,7 @@ mod tests {
         )
     }
 
+    // inputs causing singular matrices result in an erro
     #[test]
     fn singular_mat() {
         let n: usize = 10;
@@ -559,15 +560,23 @@ mod tests {
             GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap_err(),
             ProcessError::CholeskyFaiure
         );
-        // assert_eq!(
-        //     proc.log_marginal_likelihood().unwrap_err(),
-        //     ProcessError::CholeskyFaiure
-        // );
-        // assert_eq!(proc.gradient().unwrap_err(), ProcessError::CholeskyFaiure);
-        // assert_eq!(
-        //     proc.interpolate(&[BadTwoDpoint(0.215, 0.255)]).unwrap_err(),
-        //     ProcessError::CholeskyFaiure
-        // )
+    }
+
+    // update throws error if it results in a singular matrix
+    #[test]
+    fn update_err() {
+        let inputs: Vec<TwoDpoint> = vec![TwoDpoint(1., 1.), TwoDpoint(1., 2.)];
+        let outputs = vec![1., 2.];
+
+        let mut proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
+
+        let new_point = TwoDpoint(1., 1.);
+        let new_val = 3.;
+
+        assert_eq!(
+            proc.update(new_point, new_val).unwrap_err(),
+            ProcessError::CholeskyFaiure
+        );
     }
 
     #[test]
