@@ -628,6 +628,15 @@
 <a href="#613" id="613">613</a>
 <a href="#614" id="614">614</a>
 <a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This library implements Gaussian processes (GP) for use in Bayesian Regression
 //! with an aim of use in minimisation of chemical structures.
 //!
@@ -824,9 +833,10 @@
             <span class="kw">let </span>n = res.len();
             <span class="kw">let </span>autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(<span class="kw-2">&amp;</span>inputs[i], <span class="kw-2">&amp;</span>inputs[j], <span class="kw-2">&amp;</span>p))
                 + Mat::from_fn(n, n, |i, j| <span class="kw">if </span>i == j { var } <span class="kw">else </span>{ <span class="number">0. </span>});
-            <span class="kw">let </span><span class="prelude-val">Ok</span>(chol_decomp) = autocorr.cholesky(faer::Side::Lower) <span class="kw">else </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ProcessError::CholeskyFaiure);
-            };
+            <span class="comment">// let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
+            //     return Err(ProcessError::CholeskyFaiure);
+            // };
+            </span><span class="kw">let </span>chol_decomp = autocorr.cholesky(faer::Side::Lower)<span class="question-mark">?</span>;
             <span class="kw">let </span>cholesky_l = chol_decomp.compute_l();
             <span class="prelude-val">Ok</span>(GaussProcs {
                 inputs,
@@ -861,7 +871,7 @@
         <span class="comment">// update the cholesky decomposition
         </span><span class="kw">let </span><span class="kw-2">mut </span>new_col = <span class="self">self</span>.autocorr.get(<span class="number">0</span>..n, n - <span class="number">1</span>).to_owned();
         <span class="self">self</span>.cholesky_l.resize_with(n, n, |<span class="kw">_</span>, <span class="kw">_</span>| <span class="number">0.</span>);
-        <span class="kw">match </span>insert_rows_and_cols_clobber(
+        <span class="prelude-val">Ok</span>(insert_rows_and_cols_clobber(
             <span class="self">self</span>.cholesky_l.as_mut(),
             n - <span class="number">1</span>,
             new_col.as_mut(),
@@ -869,10 +879,7 @@
             PodStack::new(<span class="kw-2">&amp;mut </span>GlobalPodBuffer::new(
                 insert_rows_and_cols_clobber_req::&lt;f64&gt;(n, Parallelism::Rayon(<span class="number">0</span>)).unwrap(),
             )),
-        ) {
-            <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(ProcessError::CholeskyFaiure),
-        }
+        )<span class="question-mark">?</span>)
     }
 
     <span class="doccomment">/// Calculate the log marginal likelihood
@@ -1072,12 +1079,13 @@
         <span class="kw">let </span>postcorr = Mat::from_fn(<span class="number">1</span>, <span class="number">1</span>, |<span class="kw">_</span>, <span class="kw">_</span>| Kernel::metric(x2, x2, <span class="kw-2">&amp;</span><span class="self">self</span>.p));
         <span class="kw">let </span>y1 = Mat::from_fn(n, <span class="number">1</span>, |i, <span class="kw">_</span>| <span class="kw-2">*</span>y1[i]);
 
-        <span class="kw">let </span>chol_res = <span class="kw">match </span>autocorr.cholesky(faer::Side::Lower) {
-            <span class="prelude-val">Ok</span>(value) =&gt; value.solve(<span class="kw-2">&amp;</span>crosscorr),
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProcessError::CholeskyFaiure),
-        };
+        <span class="kw">let </span>chol_res = autocorr.cholesky(faer::Side::Lower)<span class="question-mark">?</span>.solve(<span class="kw-2">&amp;</span>crosscorr);
+        <span class="comment">// let chol_res = match autocorr.cholesky(faer::Side::Lower) {
+        //     Ok(value) =&gt; value.solve(&amp;crosscorr),
+        //     Err(_) =&gt; return Err(ProcessError::CholeskyFaiure),
+        // };
 
-        <span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
+        </span><span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
         <span class="kw">let </span>sigma = { postcorr - chol_res.transpose() * crosscorr };
         <span class="prelude-val">Ok</span>((mu, sigma))
     }
@@ -1144,7 +1152,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(inputs, outputs, <span class="number">0.</span>, [<span class="number">1750.</span>]).unwrap();
         proc.gradient().unwrap();
         proc.log_marginal_likelihood().unwrap();
-        proc.dyn_smart_interpolate(<span class="kw-2">&amp;</span>TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>), <span class="number">6561</span>)
+        proc.dyn_smart_interpolate(<span class="kw-2">&amp;</span>TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>), <span class="number">15</span>)
             .unwrap();
         proc.interpolate(<span class="kw-2">&amp;</span>[TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>)]).unwrap();
         <span class="kw">let </span>new_point = TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>);
@@ -1152,7 +1160,8 @@
         proc.update(new_point, new_res).unwrap();
     }
 
-    <span class="attr">#[test]
+    <span class="comment">// mismatched size of inputs results in an error
+    </span><span class="attr">#[test]
     </span><span class="kw">fn </span>check_len() {
         <span class="kw">let </span>n: usize = <span class="number">10</span>;
         <span class="kw">let </span>range: Vec&lt;f64&gt; = (<span class="number">0</span>..(n + <span class="number">1</span>)).map(|i| i <span class="kw">as </span>f64 / (n <span class="kw">as </span>f64)).collect();
@@ -1171,7 +1180,8 @@
         )
     }
 
-    <span class="attr">#[test]
+    <span class="comment">// inputs causing singular matrices result in an erro
+    </span><span class="attr">#[test]
     </span><span class="kw">fn </span>singular_mat() {
         <span class="kw">let </span>n: usize = <span class="number">10</span>;
         <span class="kw">let </span>range: Vec&lt;f64&gt; = (<span class="number">0</span>..(n + <span class="number">1</span>)).map(|i| i <span class="kw">as </span>f64 / (n <span class="kw">as </span>f64)).collect();
@@ -1189,16 +1199,24 @@
             GaussProcs::new(inputs, outputs, <span class="number">0.</span>, [<span class="number">1750.</span>]).unwrap_err(),
             ProcessError::CholeskyFaiure
         );
-        <span class="comment">// assert_eq!(
-        //     proc.log_marginal_likelihood().unwrap_err(),
-        //     ProcessError::CholeskyFaiure
-        // );
-        // assert_eq!(proc.gradient().unwrap_err(), ProcessError::CholeskyFaiure);
-        // assert_eq!(
-        //     proc.interpolate(&amp;[BadTwoDpoint(0.215, 0.255)]).unwrap_err(),
-        //     ProcessError::CholeskyFaiure
-        // )
-    </span>}
+    }
+
+    <span class="comment">// update throws error if it results in a singular matrix
+    </span><span class="attr">#[test]
+    </span><span class="kw">fn </span>update_err() {
+        <span class="kw">let </span>inputs: Vec&lt;TwoDpoint&gt; = <span class="macro">vec!</span>[TwoDpoint(<span class="number">1.</span>, <span class="number">1.</span>), TwoDpoint(<span class="number">1.</span>, <span class="number">2.</span>)];
+        <span class="kw">let </span>outputs = <span class="macro">vec!</span>[<span class="number">1.</span>, <span class="number">2.</span>];
+
+        <span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(inputs, outputs, <span class="number">0.</span>, [<span class="number">1750.</span>]).unwrap();
+
+        <span class="kw">let </span>new_point = TwoDpoint(<span class="number">1.</span>, <span class="number">1.</span>);
+        <span class="kw">let </span>new_val = <span class="number">3.</span>;
+
+        <span class="macro">assert_eq!</span>(
+            proc.update(new_point, new_val).unwrap_err(),
+            ProcessError::CholeskyFaiure
+        );
+    }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>cholesky_solve_test() {
