@@ -21,7 +21,7 @@ fn expected_improvement(min: f64, mu: f64, sigma: f64, zeta: f64) -> f64 {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct TwoDpoint(f64, f64);
+pub struct TwoDpoint(f64, f64);
 
 impl Kernel<1> for TwoDpoint {
     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {

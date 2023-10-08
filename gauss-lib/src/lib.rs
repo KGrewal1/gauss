@@ -20,7 +20,7 @@
 //! * 'Focused' regression, utilising only training points most similar to test point to reduce complexity
 //!
 //!
-//! # Reference:
+//! # Reference
 //!
 //! Gaussian Processes for Machine Learning, C. E. Rasmussen & C. K. I. Williams, 2006
 //!
@@ -34,10 +34,14 @@
 //! 2022,
 //! 114217,
 //! ISSN 0045-7825,
-//! https://doi.org/10.1016/j.cma.2021.114217.
+//! <https://doi.org/10.1016/j.cma.2021.114217>.
 //!
 //! arXiv:1402.0645 [cs.LG]
-//!   https://doi.org/10.48550/arXiv.1402.0645
+//! <https://doi.org/10.48550/arXiv.1402.0645>
+//!
+//! Lafage, R., (2022). egobox, a Rust toolbox for efficient global optimization.
+//! Journal of Open Source Software, 7(78), 4737,
+//! <https://doi.org/10.21105/joss.04737>
 
 #![warn(
     clippy::pedantic,
@@ -105,6 +109,27 @@ fn cholesky_solve(a: &Mat<f64>, b: &Mat<f64>) -> Mat<f64> {
 /// 2. There must be a derivative of this function in terms of the hyperparameters
 ///
 /// Note that the covariance function should never return NaN
+///
+/// # Examples
+///
+/// Defining the RBF Kernel on a 2-D point
+/// ```
+/// use gauss_lib::Kernel;
+///
+/// pub struct TwoDpoint(f64, f64);
+///
+/// impl Kernel<1> for TwoDpoint {
+///     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+///         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+///         (-0.5 * z2).exp()
+///     }
+///     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+///         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+///         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+///         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+///     }
+/// }
+/// ```
 pub trait Kernel<const N: usize, Rhs = Self> {
     /// The covariance function $\phi$ on the type $\text{T} --- $
     /// $\phi: (\text{T}, \text{T}, \[\text{f64; \text{N}}\]) \to \text{f64}$
@@ -132,7 +157,6 @@ pub trait Kernel<const N: usize, Rhs = Self> {
 /// (p19) and slightly faster for most (direct compuation of the used matrix as opposed to computation of the inverse and then matrix multiplication).
 ///
 /// As the covariance ought to be symmetric, this also leads to the property that $K^{-1}$ is also symmetric
-// #[allow(dead_code)] // update autocorr decomp instead of recalculating
 pub struct GaussProcs<const N: usize, T>
 where
     T: Kernel<N>,
@@ -149,10 +173,17 @@ impl<const N: usize, T> GaussProcs<N, T>
 where
     T: Kernel<N>,
 {
+    /// Calculate the autocorrelation matrix
     fn autocorr(&self, x1: &[&T]) -> Mat<f64> {
         let n = x1.len();
         Mat::from_fn(n, n, |i, j| Kernel::metric(x1[i], x1[j], &self.p))
             + Mat::from_fn(n, n, |i, j| if i == j { self.var } else { 0. })
+    }
+
+    /// Internal wrapper around cholesky solve
+    /// to ensure arguments are ordered correct
+    fn cholesky_solve(&self, b: &Mat<f64>) -> Mat<f64> {
+        cholesky_solve(&self.cholesky_l, b)
     }
 
     /// Creates a new Gaussian Process
@@ -239,7 +270,7 @@ where
 
         // let chol_res = chol_decomp.solve(&y1);
 
-        let chol_res = cholesky_solve(&self.cholesky_l, &y1);
+        let chol_res = self.cholesky_solve(&y1); //cholesky_solve(&self.cholesky_l, &y1);
         let yky = (chol_res.transpose() * y1).get(0, 0).to_owned();
         // faster to compute determinant of already decomposed matrix:
         // the determinant is the square of the determinant of L
@@ -262,7 +293,7 @@ where
     ///
     /// where $\phi'$ is obtained from [Kernel::deriv]
     ///
-    /// TODO
+    /// # TODO
     ///
     /// 1) investigate different groupings of the Cholesky solve and / or try explicit inversion for speed
     ///
@@ -291,7 +322,7 @@ where
 
         // let chol_res = chol_decomp.solve(&y1);
 
-        let chol_res = cholesky_solve(&self.cholesky_l, &y1);
+        let chol_res = self.cholesky_solve(&y1); // cholesky_solve(&self.cholesky_l, &y1);
 
         let mut deriv_mats = vec![Mat::<f64>::zeros(n, n); N];
         for (i, x_1) in x1.iter().enumerate() {
@@ -358,7 +389,7 @@ where
         //     Err(_) => return Err(ProcessError::CholeskyFaiure),
         // };
 
-        let chol_res = cholesky_solve(&self.cholesky_l, &crosscorr);
+        let chol_res = self.cholesky_solve(&crosscorr);
         // println!("{:?}", chol_res_original.ncols());
         // println!("{:?}", chol_res.ncols());
 
