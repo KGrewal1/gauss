@@ -56,7 +56,7 @@ This is decomposition is used to find matrix $X$, the solution to $\bm{K}\bm{X} 
 proc.update(new_point, new_val);</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.log_marginal_likelihood" class="method"><a class="src rightside" href="../src/gauss_lib/lib.rs.html#339-354">source</a><h4 class="code-header">pub fn <a href="#method.log_marginal_likelihood" class="fn">log_marginal_likelihood</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></h4></section></summary><div class="docblock"><p>Calculate the log marginal likelihood</p>
 <p>The log marginal likelihood of the process is (eq 2.30)</p>
-<p>$\ln p(y | x, \theta) = -\frac{1}{2}(y^{\intercal}\bm{K}^{-1}y + |\bm{K}| -N\ln 2\pi)$</p>
+<p>$\ln p(y | x, \theta) = -\frac{1}{2}(y^{\intercal}\bm{K}^{-1}y + |\bm{K}| +N\ln 2\pi)$</p>
 <p>where $\phi$ is as defined in <a href="trait.Kernel.html#tymethod.metric" title="method gauss_lib::Kernel::metric">Kernel::metric</a>, $y$ is the vector of outputs, $x$ the vector of inputs, $\theta$ the hyperparamters of $\phi$
 and $\bm{K}$ the covariance matrix</p>
 <h5 id="examples-2"><a href="#examples-2">Examples</a></h5>
