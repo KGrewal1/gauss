@@ -305,7 +305,7 @@ where
     ///
     /// The log marginal likelihood of the process is (eq 2.30)
     ///
-    /// $\ln p(y | x, \theta) = -\frac{1}{2}(y^{\intercal}\bm{K}^{-1}y + |\bm{K}| -N\ln 2\pi)$
+    /// $\ln p(y | x, \theta) = -\frac{1}{2}(y^{\intercal}\bm{K}^{-1}y + |\bm{K}| +N\ln 2\pi)$
     ///
     /// where $\phi$ is as defined in [Kernel::metric], $y$ is the vector of outputs, $x$ the vector of inputs, $\theta$ the hyperparamters of $\phi$
     /// and $\bm{K}$ the covariance matrix
