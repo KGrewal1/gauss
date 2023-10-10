@@ -42,6 +42,9 @@
 //! Lafage, R., (2022). egobox, a Rust toolbox for efficient global optimization.
 //! Journal of Open Source Software, 7(78), 4737,
 //! <https://doi.org/10.21105/joss.04737>
+//!
+//! arXiv:2306.06475 [cond-mat.mtrl-sci]
+//! <https://doi.org/10.48550/arXiv.2306.06475>
 
 #![warn(
     clippy::pedantic,
@@ -181,22 +184,47 @@ where
     }
 
     /// Internal wrapper around cholesky solve
-    /// to ensure arguments are ordered correct
+    /// to ensure arguments are ordered correctly
     fn cholesky_solve(&self, b: &Mat<f64>) -> Mat<f64> {
         cholesky_solve(&self.cholesky_l, b)
     }
 
     /// Creates a new Gaussian Process
+    ///
     /// # Errors
+    ///
     /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    ///
+    /// Returns an error if the matrix is non Cholesky decomposable
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// ```
     pub fn new(inputs: Vec<T>, res: Vec<f64>, var: f64, p: [f64; N]) -> Result<Self, ProcessError> {
         if inputs.len() == res.len() {
             let n = res.len();
             let autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(&inputs[i], &inputs[j], &p))
                 + Mat::from_fn(n, n, |i, j| if i == j { var } else { 0. });
-            // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-            //     return Err(ProcessError::CholeskyFaiure);
-            // };
             let chol_decomp = autocorr.cholesky(faer::Side::Lower)?;
             let cholesky_l = chol_decomp.compute_l();
             Ok(GaussProcs {
@@ -213,10 +241,40 @@ where
     }
 
     /// Updates a new Gaussian Process
+    ///
     /// # Errors
-    /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    ///
+    /// Returns an error if the matrix stops being Cholesky invertible
+    ///
     /// # Panics
     /// Panics if OOM on allocating additional memory for extending the decomposition
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let mut proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// let new_point = TwoDpoint(1., 3.);
+    /// let new_val = 3.;
+    /// proc.update(new_point, new_val);
+    /// ```
     pub fn update(&mut self, input: T, res: f64) -> Result<(), ProcessError> {
         // add the new input and output
         self.inputs.push(input);
@@ -252,33 +310,47 @@ where
     /// where $\phi$ is as defined in [Kernel::metric], $y$ is the vector of outputs, $x$ the vector of inputs, $\theta$ the hyperparamters of $\phi$
     /// and $\bm{K}$ the covariance matrix
     ///
-    /// # Errors
+    /// # Examples
     ///
-    /// Error if the matrix is non Cholesky decomposable
-    pub fn log_marginal_likelihood(&self) -> Result<f64, ProcessError> {
-        // let x1 = &self.inputs;
-        // let x1 = &self.inputs.iter().collect::<Vec<&T>>();
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// ```
+    #[allow(clippy::cast_precision_loss)]
+    #[must_use]
+    pub fn log_marginal_likelihood(&self) -> f64 {
         let y1 = &self.res;
         let n = y1.len();
-        // let autocorr = &self.autocorr; //(x1)
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
-        // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-        //     return Err(ProcessError::CholeskyFaiure);
-        // };
 
-        // let chol_res = chol_decomp.solve(&y1);
-
-        let chol_res = self.cholesky_solve(&y1); //cholesky_solve(&self.cholesky_l, &y1);
+        let chol_res = self.cholesky_solve(&y1);
         let yky = (chol_res.transpose() * y1).get(0, 0).to_owned();
         // faster to compute determinant of already decomposed matrix:
-        // the determinant is the square of the determinant of L
+        // the determinant is the square of the determinant of L in LLLT decomp
         let detk = self.cholesky_l.determinant().powi(2);
         let ln2pi = (2. * PI).ln();
 
         // casting the integer size of matrix to float may lose precision
         // however, does not occur for any matrix big enough to be reasonably invertible
-        #[allow(clippy::cast_precision_loss)]
-        Ok(-0.5 * (yky + detk + (n as f64) * ln2pi))
+        -0.5 * (yky + detk + (n as f64) * ln2pi)
     }
 
     /// Calculate the gradient of [GaussProcs::log_marginal_likelihood] with respect to the hyperparameters
@@ -295,32 +367,43 @@ where
     ///
     /// 1) investigate different groupings of the Cholesky solve and / or try explicit inversion for speed
     ///
-    /// # Errors
-    ///
-    /// Error if the matrix is non Cholesky decomposable
-    ///
     /// # Panics
     ///
     /// Relies on a Vector with $N$ elements being cast into an array with $N$ :  should always hold
-    pub fn gradient(&self) -> Result<[f64; N], ProcessError> {
-        // let x1 = &self.inputs;
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.gradient();
+    /// ```
+    #[must_use]
+    pub fn gradient(&self) -> [f64; N] {
         let x1 = &self.inputs.iter().collect::<Vec<&T>>();
         let y1 = &self.res;
         let n = x1.len();
 
-        // let autocorr = self.autocorr(x1);
-        // let autocorr = &self.autocorr;
-        //(x1)
-        // println!("autocorr {:?}", autocorr[(22, 36)]);
-
         let y1 = Mat::from_fn(n, 1, |i, _| y1[i]);
-        // let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-        //     return Err(ProcessError::CholeskyFaiure);
-        // };
 
-        // let chol_res = chol_decomp.solve(&y1);
-
-        let chol_res = self.cholesky_solve(&y1); // cholesky_solve(&self.cholesky_l, &y1);
+        let chol_res = self.cholesky_solve(&y1);
 
         let mut deriv_mats = vec![Mat::<f64>::zeros(n, n); N];
         for (i, x_1) in x1.iter().enumerate() {
@@ -332,16 +415,15 @@ where
             }
         }
         let dautocorrdps: [Mat<f64>; N] = deriv_mats.try_into().unwrap();
-        // println!("dautocorrdp {:?}", dautocorrdps[0][(22, 36)]);
 
         let deltas = dautocorrdps.map(|i| {
             (&chol_res * chol_res.transpose()) * &i - cholesky_solve(&self.cholesky_l, &i)
         });
 
-        Ok(deltas.map(|delta| {
+        deltas.map(|delta| {
             let range = delta.ncols();
             ((0..range).map(|i| delta.get(i, i)).sum::<f64>()) / 2.
-        }))
+        })
     }
 
     /// Interpolate the process to a series of points
@@ -365,15 +447,36 @@ where
     ///
     /// Eq's 2.25 and 2.26. (Note that $\bm{K}$ has the noise rolled into it)
     ///
-    /// # Errors
-    /// Error if the matrix is non Cholesky decomposable
-    pub fn interpolate(&self, x2: &[T]) -> Result<(Mat<f64>, Mat<f64>), ProcessError> {
-        let x1 = &self.inputs; //.iter().collect::<Vec<&T>>()
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// let new_point = TwoDpoint(1., 1.5);
+    /// proc.interpolate(&[new_point]);
+    /// ```
+    pub fn interpolate(&self, x2: &[T]) -> (Mat<f64>, Mat<f64>) {
+        let x1 = &self.inputs;
         let y1 = &self.res;
-        // let n = x1.len();
 
-        // let autocorr = self.autocorr(x1);
-        // let autocorr = &self.autocorr; //(x1)
         let crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
             Kernel::metric(&x1[i], &x2[j], &self.p)
         });
@@ -381,19 +484,12 @@ where
             Kernel::metric(&x2[i], &x2[j], &self.p)
         });
         let y1 = Mat::from_fn(y1.len(), 1, |i, _| y1[i]);
-        // println!("{:?}", autocorr);
-        // let chol_res_original = match autocorr.cholesky(faer::Side::Lower) {
-        //     Ok(value) => value.solve(&crosscorr),
-        //     Err(_) => return Err(ProcessError::CholeskyFaiure),
-        // };
 
         let chol_res = self.cholesky_solve(&crosscorr);
-        // println!("{:?}", chol_res_original.ncols());
-        // println!("{:?}", chol_res.ncols());
 
         let mu = { chol_res.transpose() * &y1 };
         let sigma = { postcorr - chol_res.transpose() * crosscorr };
-        Ok((mu, sigma))
+        (mu, sigma)
     }
 
     /// Interpolate the process to a point, using only $n$ nearest points for this (not hardcoded)
@@ -404,17 +500,44 @@ where
     ///
     ///
     /// # Errors
+    ///
     /// Error if the matrix is non Cholesky decomposable
     ///
     /// # Panics
+    ///
     /// Panics if the covariance function returns NaN
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel<1> for TwoDpoint {
+    /// #     fn metric(&self, rhs: &Self, param: &[f64; 1]) -> f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&self, rhs: &Self, param: &[f64; 1]) -> [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// let new_point = TwoDpoint(1., 1.5);
+    /// proc.dyn_smart_interpolate(&new_point, 2);
+    /// ```
     pub fn dyn_smart_interpolate(
         &self,
         x2: &T,
         n: usize,
     ) -> Result<(Mat<f64>, Mat<f64>), ProcessError> {
-        // let n = 6561;
-
         let mut heap = BinaryHeap::with_capacity(n + 1);
 
         self.inputs
@@ -441,10 +564,6 @@ where
         let y1 = Mat::from_fn(n, 1, |i, _| *y1[i]);
 
         let chol_res = autocorr.cholesky(faer::Side::Lower)?.solve(&crosscorr);
-        // let chol_res = match autocorr.cholesky(faer::Side::Lower) {
-        //     Ok(value) => value.solve(&crosscorr),
-        //     Err(_) => return Err(ProcessError::CholeskyFaiure),
-        // };
 
         let mu = { chol_res.transpose() * &y1 };
         let sigma = { postcorr - chol_res.transpose() * crosscorr };
@@ -511,11 +630,12 @@ mod tests {
         let outputs: Vec<f64> = inputs.iter().map(lim_nonpoly).collect();
 
         let mut proc = GaussProcs::new(inputs, outputs, 0., [1750.]).unwrap();
-        proc.gradient().unwrap();
-        proc.log_marginal_likelihood().unwrap();
+        let grad = proc.gradient();
+        let lml = proc.log_marginal_likelihood();
+        println!("{:?}, {}", grad, lml);
         proc.dyn_smart_interpolate(&TwoDpoint(0.215, 0.255), 15)
             .unwrap();
-        proc.interpolate(&[TwoDpoint(0.215, 0.255)]).unwrap();
+        proc.interpolate(&[TwoDpoint(0.215, 0.255)]);
         let new_point = TwoDpoint(0.215, 0.255);
         let new_res = lim_nonpoly(&new_point);
         proc.update(new_point, new_res).unwrap();

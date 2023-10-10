@@ -5,3 +5,4 @@ proc*txt
 *.data*
 *.out*
 flamegraph.svg
+*.profraw

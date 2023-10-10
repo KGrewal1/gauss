@@ -60,8 +60,8 @@ fn main() {
     println!("{:?}", outputs);
     // create process
     let mut proc = GaussProcs::new(samples.clone(), outputs.clone(), 0.01, [3.5]).unwrap(); //
-    println!("{}", proc.log_marginal_likelihood().unwrap());
-    println!("{:?}", proc.gradient().unwrap());
+    println!("{}", proc.log_marginal_likelihood());
+    println!("{:?}", proc.gradient());
 
     // generate input to test
     let n: usize = 30;
@@ -81,7 +81,7 @@ fn main() {
     let mut minimum = outputs.iter().fold(f64::INFINITY, |a, &b| a.min(b));
     println!("Initial minimum {}", minimum);
     for _i in 1..75 {
-        let (mu, sigma) = proc.interpolate(&test_inputs).unwrap();
+        let (mu, sigma) = proc.interpolate(&test_inputs);
         // println!("{:?}", mu);
         // println!("{:?},{:?}", test_inputs[0], mu.get(0, 0));
         let mut res: Vec<(TwoDpoint, f64, f64, usize, f64)> = test_inputs
@@ -116,7 +116,7 @@ fn main() {
     // panic!();
     // this loop effectivley uses UCB to converge on minimum
     for _i in 1..100 {
-        let (mu, sigma) = proc.interpolate(&test_inputs).unwrap();
+        let (mu, sigma) = proc.interpolate(&test_inputs);
         // println!("{:?}", mu);
         // println!("{:?},{:?}", test_inputs[0], mu.get(0, 0));
         let mut res: Vec<(TwoDpoint, f64, f64, usize)> = test_inputs

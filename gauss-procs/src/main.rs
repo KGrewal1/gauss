@@ -142,10 +142,7 @@ fn main() {
     println!("Elapsed, trunc: {:.2?}", elapsed);
 
     let now = Instant::now();
-    println!(
-        "{:?}",
-        proc.interpolate(&[TwoDpoint(0.215, 0.255)]).unwrap()
-    );
+    println!("{:?}", proc.interpolate(&[TwoDpoint(0.215, 0.255)]));
     let elapsed = now.elapsed();
     println!("Elapsed, non trunc: {:.2?}", elapsed);
 
