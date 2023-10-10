@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `gauss-lib/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gauss_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (97c81e1b5 2023-10-07)" data-channel="nightly" data-search-js="search-5f5ec5419eadd0c9.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `gauss-lib/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gauss_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (59edd6705 2023-10-09)" data-channel="nightly" data-search-js="search-5f5ec5419eadd0c9.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.js"                  integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/contrib/auto-render.min.js"    integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
 <script>
@@ -637,6 +637,126 @@
 <a href="#622" id="622">622</a>
 <a href="#623" id="623">623</a>
 <a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This library implements Gaussian processes (GP) for use in Bayesian Regression
 //! with an aim of use in minimisation of chemical structures.
 //!
@@ -681,6 +801,9 @@
 //! Lafage, R., (2022). egobox, a Rust toolbox for efficient global optimization.
 //! Journal of Open Source Software, 7(78), 4737,
 //! &lt;https://doi.org/10.21105/joss.04737&gt;
+//!
+//! arXiv:2306.06475 [cond-mat.mtrl-sci]
+//! &lt;https://doi.org/10.48550/arXiv.2306.06475&gt;
 
 </span><span class="attr">#![warn(
     clippy::pedantic,
@@ -820,23 +943,48 @@
     }
 
     <span class="doccomment">/// Internal wrapper around cholesky solve
-    /// to ensure arguments are ordered correct
+    /// to ensure arguments are ordered correctly
     </span><span class="kw">fn </span>cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>, b: <span class="kw-2">&amp;</span>Mat&lt;f64&gt;) -&gt; Mat&lt;f64&gt; {
         cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, b)
     }
 
     <span class="doccomment">/// Creates a new Gaussian Process
+    ///
     /// # Errors
+    ///
     /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    ///
+    /// Returns an error if the matrix is non Cholesky decomposable
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// ```
     </span><span class="kw">pub fn </span>new(inputs: Vec&lt;T&gt;, res: Vec&lt;f64&gt;, var: f64, p: [f64; N]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ProcessError&gt; {
         <span class="kw">if </span>inputs.len() == res.len() {
             <span class="kw">let </span>n = res.len();
             <span class="kw">let </span>autocorr = Mat::from_fn(n, n, |i, j| Kernel::metric(<span class="kw-2">&amp;</span>inputs[i], <span class="kw-2">&amp;</span>inputs[j], <span class="kw-2">&amp;</span>p))
                 + Mat::from_fn(n, n, |i, j| <span class="kw">if </span>i == j { var } <span class="kw">else </span>{ <span class="number">0. </span>});
-            <span class="comment">// let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-            //     return Err(ProcessError::CholeskyFaiure);
-            // };
-            </span><span class="kw">let </span>chol_decomp = autocorr.cholesky(faer::Side::Lower)<span class="question-mark">?</span>;
+            <span class="kw">let </span>chol_decomp = autocorr.cholesky(faer::Side::Lower)<span class="question-mark">?</span>;
             <span class="kw">let </span>cholesky_l = chol_decomp.compute_l();
             <span class="prelude-val">Ok</span>(GaussProcs {
                 inputs,
@@ -852,10 +1000,40 @@
     }
 
     <span class="doccomment">/// Updates a new Gaussian Process
+    ///
     /// # Errors
-    /// Returns an error if the number of inputs and the number of outputs provided are non equal
+    ///
+    /// Returns an error if the matrix stops being Cholesky invertible
+    ///
     /// # Panics
     /// Panics if OOM on allocating additional memory for extending the decomposition
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let mut proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// let new_point = TwoDpoint(1., 3.);
+    /// let new_val = 3.;
+    /// proc.update(new_point, new_val);
+    /// ```
     </span><span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, input: T, res: f64) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcessError&gt; {
         <span class="comment">// add the new input and output
         </span><span class="self">self</span>.inputs.push(input);
@@ -891,33 +1069,47 @@
     /// where $\phi$ is as defined in [Kernel::metric], $y$ is the vector of outputs, $x$ the vector of inputs, $\theta$ the hyperparamters of $\phi$
     /// and $\bm{K}$ the covariance matrix
     ///
-    /// # Errors
+    /// # Examples
     ///
-    /// Error if the matrix is non Cholesky decomposable
-    </span><span class="kw">pub fn </span>log_marginal_likelihood(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;f64, ProcessError&gt; {
-        <span class="comment">// let x1 = &amp;self.inputs;
-        // let x1 = &amp;self.inputs.iter().collect::&lt;Vec&lt;&amp;T&gt;&gt;();
-        </span><span class="kw">let </span>y1 = <span class="kw-2">&amp;</span><span class="self">self</span>.res;
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// ```
+    </span><span class="attr">#[allow(clippy::cast_precision_loss)]
+    #[must_use]
+    </span><span class="kw">pub fn </span>log_marginal_likelihood(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
+        <span class="kw">let </span>y1 = <span class="kw-2">&amp;</span><span class="self">self</span>.res;
         <span class="kw">let </span>n = y1.len();
-        <span class="comment">// let autocorr = &amp;self.autocorr; //(x1)
-        </span><span class="kw">let </span>y1 = Mat::from_fn(y1.len(), <span class="number">1</span>, |i, <span class="kw">_</span>| y1[i]);
-        <span class="comment">// let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-        //     return Err(ProcessError::CholeskyFaiure);
-        // };
+        <span class="kw">let </span>y1 = Mat::from_fn(y1.len(), <span class="number">1</span>, |i, <span class="kw">_</span>| y1[i]);
 
-        // let chol_res = chol_decomp.solve(&amp;y1);
-
-        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1); <span class="comment">//cholesky_solve(&amp;self.cholesky_l, &amp;y1);
-        </span><span class="kw">let </span>yky = (chol_res.transpose() * y1).get(<span class="number">0</span>, <span class="number">0</span>).to_owned();
+        <span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1);
+        <span class="kw">let </span>yky = (chol_res.transpose() * y1).get(<span class="number">0</span>, <span class="number">0</span>).to_owned();
         <span class="comment">// faster to compute determinant of already decomposed matrix:
-        // the determinant is the square of the determinant of L
+        // the determinant is the square of the determinant of L in LLLT decomp
         </span><span class="kw">let </span>detk = <span class="self">self</span>.cholesky_l.determinant().powi(<span class="number">2</span>);
         <span class="kw">let </span>ln2pi = (<span class="number">2. </span>* PI).ln();
 
         <span class="comment">// casting the integer size of matrix to float may lose precision
         // however, does not occur for any matrix big enough to be reasonably invertible
-        </span><span class="attr">#[allow(clippy::cast_precision_loss)]
-        </span><span class="prelude-val">Ok</span>(-<span class="number">0.5 </span>* (yky + detk + (n <span class="kw">as </span>f64) * ln2pi))
+        </span>-<span class="number">0.5 </span>* (yky + detk + (n <span class="kw">as </span>f64) * ln2pi)
     }
 
     <span class="doccomment">/// Calculate the gradient of [GaussProcs::log_marginal_likelihood] with respect to the hyperparameters
@@ -934,34 +1126,45 @@
     ///
     /// 1) investigate different groupings of the Cholesky solve and / or try explicit inversion for speed
     ///
-    /// # Errors
-    ///
-    /// Error if the matrix is non Cholesky decomposable
-    ///
     /// # Panics
     ///
     /// Relies on a Vector with $N$ elements being cast into an array with $N$ :  should always hold
-    </span><span class="kw">pub fn </span>gradient(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[f64; N], ProcessError&gt; {
-        <span class="comment">// let x1 = &amp;self.inputs;
-        </span><span class="kw">let </span>x1 = <span class="kw-2">&amp;</span><span class="self">self</span>.inputs.iter().collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>T&gt;&gt;();
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.gradient();
+    /// ```
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>gradient(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [f64; N] {
+        <span class="kw">let </span>x1 = <span class="kw-2">&amp;</span><span class="self">self</span>.inputs.iter().collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>T&gt;&gt;();
         <span class="kw">let </span>y1 = <span class="kw-2">&amp;</span><span class="self">self</span>.res;
         <span class="kw">let </span>n = x1.len();
 
-        <span class="comment">// let autocorr = self.autocorr(x1);
-        // let autocorr = &amp;self.autocorr;
-        //(x1)
-        // println!(&quot;autocorr {:?}&quot;, autocorr[(22, 36)]);
+        <span class="kw">let </span>y1 = Mat::from_fn(n, <span class="number">1</span>, |i, <span class="kw">_</span>| y1[i]);
 
-        </span><span class="kw">let </span>y1 = Mat::from_fn(n, <span class="number">1</span>, |i, <span class="kw">_</span>| y1[i]);
-        <span class="comment">// let Ok(chol_decomp) = autocorr.cholesky(faer::Side::Lower) else {
-        //     return Err(ProcessError::CholeskyFaiure);
-        // };
+        <span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1);
 
-        // let chol_res = chol_decomp.solve(&amp;y1);
-
-        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>y1); <span class="comment">// cholesky_solve(&amp;self.cholesky_l, &amp;y1);
-
-        </span><span class="kw">let </span><span class="kw-2">mut </span>deriv_mats = <span class="macro">vec!</span>[Mat::&lt;f64&gt;::zeros(n, n); N];
+        <span class="kw">let </span><span class="kw-2">mut </span>deriv_mats = <span class="macro">vec!</span>[Mat::&lt;f64&gt;::zeros(n, n); N];
         <span class="kw">for </span>(i, x_1) <span class="kw">in </span>x1.iter().enumerate() {
             <span class="kw">for </span>(j, x_2) <span class="kw">in </span>x1.iter().enumerate() {
                 <span class="kw">let </span>derivs = Kernel::deriv(<span class="kw-2">*</span>x_1, <span class="kw-2">*</span>x_2, <span class="kw-2">&amp;</span><span class="self">self</span>.p);
@@ -971,16 +1174,15 @@
             }
         }
         <span class="kw">let </span>dautocorrdps: [Mat&lt;f64&gt;; N] = deriv_mats.try_into().unwrap();
-        <span class="comment">// println!(&quot;dautocorrdp {:?}&quot;, dautocorrdps[0][(22, 36)]);
 
-        </span><span class="kw">let </span>deltas = dautocorrdps.map(|i| {
+        <span class="kw">let </span>deltas = dautocorrdps.map(|i| {
             (<span class="kw-2">&amp;</span>chol_res * chol_res.transpose()) * <span class="kw-2">&amp;</span>i - cholesky_solve(<span class="kw-2">&amp;</span><span class="self">self</span>.cholesky_l, <span class="kw-2">&amp;</span>i)
         });
 
-        <span class="prelude-val">Ok</span>(deltas.map(|delta| {
+        deltas.map(|delta| {
             <span class="kw">let </span>range = delta.ncols();
             ((<span class="number">0</span>..range).map(|i| delta.get(i, i)).sum::&lt;f64&gt;()) / <span class="number">2.
-        </span>}))
+        </span>})
     }
 
     <span class="doccomment">/// Interpolate the process to a series of points
@@ -1004,35 +1206,49 @@
     ///
     /// Eq&#39;s 2.25 and 2.26. (Note that $\bm{K}$ has the noise rolled into it)
     ///
-    /// # Errors
-    /// Error if the matrix is non Cholesky decomposable
-    </span><span class="kw">pub fn </span>interpolate(<span class="kw-2">&amp;</span><span class="self">self</span>, x2: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="prelude-ty">Result</span>&lt;(Mat&lt;f64&gt;, Mat&lt;f64&gt;), ProcessError&gt; {
-        <span class="kw">let </span>x1 = <span class="kw-2">&amp;</span><span class="self">self</span>.inputs; <span class="comment">//.iter().collect::&lt;Vec&lt;&amp;T&gt;&gt;()
-        </span><span class="kw">let </span>y1 = <span class="kw-2">&amp;</span><span class="self">self</span>.res;
-        <span class="comment">// let n = x1.len();
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// let new_point = TwoDpoint(1., 1.5);
+    /// proc.interpolate(&amp;[new_point]);
+    /// ```
+    </span><span class="kw">pub fn </span>interpolate(<span class="kw-2">&amp;</span><span class="self">self</span>, x2: <span class="kw-2">&amp;</span>[T]) -&gt; (Mat&lt;f64&gt;, Mat&lt;f64&gt;) {
+        <span class="kw">let </span>x1 = <span class="kw-2">&amp;</span><span class="self">self</span>.inputs;
+        <span class="kw">let </span>y1 = <span class="kw-2">&amp;</span><span class="self">self</span>.res;
 
-        // let autocorr = self.autocorr(x1);
-        // let autocorr = &amp;self.autocorr; //(x1)
-        </span><span class="kw">let </span>crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
+        <span class="kw">let </span>crosscorr = Mat::from_fn(x1.len(), x2.len(), |i, j| {
             Kernel::metric(<span class="kw-2">&amp;</span>x1[i], <span class="kw-2">&amp;</span>x2[j], <span class="kw-2">&amp;</span><span class="self">self</span>.p)
         });
         <span class="kw">let </span>postcorr = Mat::from_fn(x2.len(), x2.len(), |i, j| {
             Kernel::metric(<span class="kw-2">&amp;</span>x2[i], <span class="kw-2">&amp;</span>x2[j], <span class="kw-2">&amp;</span><span class="self">self</span>.p)
         });
         <span class="kw">let </span>y1 = Mat::from_fn(y1.len(), <span class="number">1</span>, |i, <span class="kw">_</span>| y1[i]);
-        <span class="comment">// println!(&quot;{:?}&quot;, autocorr);
-        // let chol_res_original = match autocorr.cholesky(faer::Side::Lower) {
-        //     Ok(value) =&gt; value.solve(&amp;crosscorr),
-        //     Err(_) =&gt; return Err(ProcessError::CholeskyFaiure),
-        // };
 
-        </span><span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>crosscorr);
-        <span class="comment">// println!(&quot;{:?}&quot;, chol_res_original.ncols());
-        // println!(&quot;{:?}&quot;, chol_res.ncols());
+        <span class="kw">let </span>chol_res = <span class="self">self</span>.cholesky_solve(<span class="kw-2">&amp;</span>crosscorr);
 
-        </span><span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
+        <span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
         <span class="kw">let </span>sigma = { postcorr - chol_res.transpose() * crosscorr };
-        <span class="prelude-val">Ok</span>((mu, sigma))
+        (mu, sigma)
     }
 
     <span class="doccomment">/// Interpolate the process to a point, using only $n$ nearest points for this (not hardcoded)
@@ -1043,18 +1259,45 @@
     ///
     ///
     /// # Errors
+    ///
     /// Error if the matrix is non Cholesky decomposable
     ///
     /// # Panics
+    ///
     /// Panics if the covariance function returns NaN
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gauss_lib::*;
+    /// #
+    /// pub struct TwoDpoint(f64, f64);
+    /// #
+    /// # impl Kernel&lt;1&gt; for TwoDpoint {
+    /// #     fn metric(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; f64 {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         (-0.5 * z2).exp()
+    /// #     }
+    /// #     fn deriv(&amp;self, rhs: &amp;Self, param: &amp;[f64; 1]) -&gt; [f64; 1] {
+    /// #         let z2 = param[0] * (((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2)));
+    /// #         let dz2dp = ((self.0 - rhs.0).powi(2)) + ((self.1 - rhs.1).powi(2));
+    /// #         [-0.5 * dz2dp * (-0.5 * z2).exp()]
+    /// #     }
+    /// # }
+    ///
+    /// let points = vec![TwoDpoint(1., 1.), TwoDpoint(1.,2.)];
+    /// let vals = vec![1., 2.];
+    /// let proc = GaussProcs::new(points, vals, 0., [10.]).unwrap();
+    /// proc.log_marginal_likelihood();
+    /// let new_point = TwoDpoint(1., 1.5);
+    /// proc.dyn_smart_interpolate(&amp;new_point, 2);
+    /// ```
     </span><span class="kw">pub fn </span>dyn_smart_interpolate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         x2: <span class="kw-2">&amp;</span>T,
         n: usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(Mat&lt;f64&gt;, Mat&lt;f64&gt;), ProcessError&gt; {
-        <span class="comment">// let n = 6561;
-
-        </span><span class="kw">let </span><span class="kw-2">mut </span>heap = BinaryHeap::with_capacity(n + <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>heap = BinaryHeap::with_capacity(n + <span class="number">1</span>);
 
         <span class="self">self</span>.inputs
             .iter()
@@ -1080,12 +1323,8 @@
         <span class="kw">let </span>y1 = Mat::from_fn(n, <span class="number">1</span>, |i, <span class="kw">_</span>| <span class="kw-2">*</span>y1[i]);
 
         <span class="kw">let </span>chol_res = autocorr.cholesky(faer::Side::Lower)<span class="question-mark">?</span>.solve(<span class="kw-2">&amp;</span>crosscorr);
-        <span class="comment">// let chol_res = match autocorr.cholesky(faer::Side::Lower) {
-        //     Ok(value) =&gt; value.solve(&amp;crosscorr),
-        //     Err(_) =&gt; return Err(ProcessError::CholeskyFaiure),
-        // };
 
-        </span><span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
+        <span class="kw">let </span>mu = { chol_res.transpose() * <span class="kw-2">&amp;</span>y1 };
         <span class="kw">let </span>sigma = { postcorr - chol_res.transpose() * crosscorr };
         <span class="prelude-val">Ok</span>((mu, sigma))
     }
@@ -1150,11 +1389,12 @@
         <span class="kw">let </span>outputs: Vec&lt;f64&gt; = inputs.iter().map(lim_nonpoly).collect();
 
         <span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(inputs, outputs, <span class="number">0.</span>, [<span class="number">1750.</span>]).unwrap();
-        proc.gradient().unwrap();
-        proc.log_marginal_likelihood().unwrap();
+        <span class="kw">let </span>grad = proc.gradient();
+        <span class="kw">let </span>lml = proc.log_marginal_likelihood();
+        <span class="macro">println!</span>(<span class="string">&quot;{:?}, {}&quot;</span>, grad, lml);
         proc.dyn_smart_interpolate(<span class="kw-2">&amp;</span>TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>), <span class="number">15</span>)
             .unwrap();
-        proc.interpolate(<span class="kw-2">&amp;</span>[TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>)]).unwrap();
+        proc.interpolate(<span class="kw-2">&amp;</span>[TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>)]);
         <span class="kw">let </span>new_point = TwoDpoint(<span class="number">0.215</span>, <span class="number">0.255</span>);
         <span class="kw">let </span>new_res = lim_nonpoly(<span class="kw-2">&amp;</span>new_point);
         proc.update(new_point, new_res).unwrap();
