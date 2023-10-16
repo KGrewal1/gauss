@@ -17,7 +17,8 @@ fn norm(x: f64) -> f64 {
 }
 /// Expected improement vs minimum given current min, EV and error
 fn expected_improvement(min: f64, mu: f64, sigma: f64, zeta: f64) -> f64 {
-    (min - mu - zeta) * erf((min - mu - zeta) / sigma) + sigma * norm(min - mu - zeta)
+    (min - mu - zeta) * 0.5 * (1. + erf((min - mu - zeta) / (sigma * 2.0_f64.sqrt())))
+        + sigma * norm(min - mu - zeta)
 }
 
 #[derive(Clone, Copy, Debug)]
