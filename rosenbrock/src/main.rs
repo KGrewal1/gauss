@@ -17,8 +17,8 @@ fn norm(x: f64) -> f64 {
 }
 /// Expected improement vs minimum given current min, EV and error
 fn expected_improvement(min: f64, mu: f64, sigma: f64, zeta: f64) -> f64 {
-    (min - mu - zeta) * 0.5 * (1. + erf((min - mu - zeta) / (sigma * 2.0_f64.sqrt())))
-        + sigma * norm(min - mu - zeta)
+    (min - mu + zeta) * 0.5 * (1. + erf((min - mu + zeta) / (sigma * 2.0_f64.sqrt())))
+        + sigma * norm((min - mu + zeta) / sigma)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -60,7 +60,7 @@ fn main() {
 
     println!("{:?}", outputs);
     // create process
-    let mut proc = GaussProcs::new(samples.clone(), outputs.clone(), 0.01, [3.5]).unwrap(); //
+    let mut proc = GaussProcs::new(samples.clone(), outputs.clone(), 0.000_000_1, [8.5]).unwrap(); //
     println!("{}", proc.log_marginal_likelihood());
     println!("{:?}", proc.gradient());
 
@@ -77,8 +77,8 @@ fn main() {
         .collect();
     // println!("{:?}", &test_inputs[132..150]);
     // panic!();
-    let factor = 15.;
-    let zeta = 175.;
+
+    let zeta = 1000.;
     let mut minimum = outputs.iter().fold(f64::INFINITY, |a, &b| a.min(b));
     println!("Initial minimum {}", minimum);
     for _i in 1..75 {
@@ -100,7 +100,10 @@ fn main() {
             })
             .collect();
         println!("{:?}", res[224]);
-        res.sort_by(|a, b| (b.4).partial_cmp(&(a.4)).unwrap());
+        res.sort_by(|a, b| (a.4).partial_cmp(&(b.4)).unwrap());
+        // print the first 20 elements of res
+        println!("{:?}", res.iter().take(1).collect::<Vec<_>>());
+        println!("{:?}", res.iter().rev().take(1).collect::<Vec<_>>());
         let next = res.pop().unwrap();
         println!("Next {:?}", next);
         let val = rosenbrock(&next.0);
@@ -113,8 +116,10 @@ fn main() {
         // println!("{:?}", res[224])
     }
 
-    let mut proc = GaussProcs::new(samples.clone(), outputs.clone(), 0.01, [3.5]).unwrap();
     // panic!();
+    let mut proc = GaussProcs::new(samples.clone(), outputs.clone(), 0.01, [3.5]).unwrap();
+    let factor = 15.;
+
     // this loop effectivley uses UCB to converge on minimum
     for _i in 1..100 {
         let (mu, sigma) = proc.interpolate(&test_inputs);
