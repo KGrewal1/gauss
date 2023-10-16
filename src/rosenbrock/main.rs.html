@@ -152,6 +152,11 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::f64::consts::PI;
 
 <span class="kw">use </span>gauss_lib::<span class="kw-2">*</span>;
@@ -171,8 +176,8 @@
 }
 <span class="doccomment">/// Expected improement vs minimum given current min, EV and error
 </span><span class="kw">fn </span>expected_improvement(min: f64, mu: f64, sigma: f64, zeta: f64) -&gt; f64 {
-    (min - mu - zeta) * <span class="number">0.5 </span>* (<span class="number">1. </span>+ erf((min - mu - zeta) / (sigma * <span class="number">2.0_f64</span>.sqrt())))
-        + sigma * norm(min - mu - zeta)
+    (min - mu + zeta) * <span class="number">0.5 </span>* (<span class="number">1. </span>+ erf((min - mu + zeta) / (sigma * <span class="number">2.0_f64</span>.sqrt())))
+        + sigma * norm((min - mu + zeta) / sigma)
 }
 
 <span class="attr">#[derive(Clone, Copy, Debug)]
@@ -214,7 +219,7 @@
 
     <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, outputs);
     <span class="comment">// create process
-    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.01</span>, [<span class="number">3.5</span>]).unwrap(); <span class="comment">//
+    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.000_000_1</span>, [<span class="number">8.5</span>]).unwrap(); <span class="comment">//
     </span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, proc.log_marginal_likelihood());
     <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, proc.gradient());
 
@@ -231,8 +236,8 @@
         .collect();
     <span class="comment">// println!(&quot;{:?}&quot;, &amp;test_inputs[132..150]);
     // panic!();
-    </span><span class="kw">let </span>factor = <span class="number">15.</span>;
-    <span class="kw">let </span>zeta = <span class="number">175.</span>;
+
+    </span><span class="kw">let </span>zeta = <span class="number">1000.</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>minimum = outputs.iter().fold(f64::INFINITY, |a, <span class="kw-2">&amp;</span>b| a.min(b));
     <span class="macro">println!</span>(<span class="string">&quot;Initial minimum {}&quot;</span>, minimum);
     <span class="kw">for </span>_i <span class="kw">in </span><span class="number">1</span>..<span class="number">75 </span>{
@@ -254,7 +259,10 @@
             })
             .collect();
         <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res[<span class="number">224</span>]);
-        res.sort_by(|a, b| (b.<span class="number">4</span>).partial_cmp(<span class="kw-2">&amp;</span>(a.<span class="number">4</span>)).unwrap());
+        res.sort_by(|a, b| (a.<span class="number">4</span>).partial_cmp(<span class="kw-2">&amp;</span>(b.<span class="number">4</span>)).unwrap());
+        <span class="comment">// print the first 20 elements of res
+        </span><span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res.iter().take(<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;());
+        <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res.iter().rev().take(<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;());
         <span class="kw">let </span>next = res.pop().unwrap();
         <span class="macro">println!</span>(<span class="string">&quot;Next {:?}&quot;</span>, next);
         <span class="kw">let </span>val = rosenbrock(<span class="kw-2">&amp;</span>next.<span class="number">0</span>);
@@ -267,9 +275,11 @@
         <span class="comment">// println!(&quot;{:?}&quot;, res[224])
     </span>}
 
-    <span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.01</span>, [<span class="number">3.5</span>]).unwrap();
     <span class="comment">// panic!();
-    // this loop effectivley uses UCB to converge on minimum
+    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.01</span>, [<span class="number">3.5</span>]).unwrap();
+    <span class="kw">let </span>factor = <span class="number">15.</span>;
+
+    <span class="comment">// this loop effectivley uses UCB to converge on minimum
     </span><span class="kw">for </span>_i <span class="kw">in </span><span class="number">1</span>..<span class="number">100 </span>{
         <span class="kw">let </span>(mu, sigma) = proc.interpolate(<span class="kw-2">&amp;</span>test_inputs);
         <span class="comment">// println!(&quot;{:?}&quot;, mu);
