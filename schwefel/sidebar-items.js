@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["expected_improvement","main","norm","schwefel"],"static":["GLOBAL"],"struct":["TwoDpoint"]};

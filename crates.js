@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["gauss_lib","gauss_procs","rosenbrock"];
+window.ALL_CRATES = ["gauss_lib","gauss_procs","rosenbrock","schwefel"];

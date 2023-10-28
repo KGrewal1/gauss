@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rosenbrock/src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rosenbrock" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (2f1bd0729 2023-10-27)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `schwefel/src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="schwefel" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (2f1bd0729 2023-10-27)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.js"                  integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/contrib/auto-render.min.js"    integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
 <script>
@@ -157,18 +157,38 @@
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::f64::consts::PI;
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+</pre></div><pre class="rust"><code><span class="attr">#[cfg(not(target_env = <span class="string">&quot;msvc&quot;</span>))]
+</span><span class="kw">use </span>tikv_jemallocator::Jemalloc;
+
+<span class="attr">#[cfg(not(target_env = <span class="string">&quot;msvc&quot;</span>))]
+#[global_allocator]
+</span><span class="kw">static </span>GLOBAL: Jemalloc = Jemalloc;
+
+<span class="kw">use </span>std::f64::consts::PI;
 
 <span class="kw">use </span>gauss_lib::<span class="kw-2">*</span>;
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>rand::{seq::SliceRandom, SeedableRng};
 <span class="kw">use </span>rand_chacha::ChaCha8Rng;
 <span class="kw">use </span>statrs::function::erf::erf;
-<span class="doccomment">/// Rosenbrock function to test optimisation
-/// global minimum should be at (1,1) with value -1
-</span><span class="kw">fn </span>rosenbrock(x: <span class="kw-2">&amp;</span>TwoDpoint) -&gt; f64 {
-    (<span class="number">1. </span>- x.<span class="number">0</span>).powi(<span class="number">2</span>) + <span class="number">10. </span>* (x.<span class="number">1 </span>- x.<span class="number">0</span>.powi(<span class="number">2</span>)).powi(<span class="number">2</span>) - <span class="number">1.
-</span>}
+<span class="doccomment">/// 2D scwefel function
+/// global minimum should be at (420.9687,420.9867) with value 0
+</span><span class="kw">fn </span>schwefel(x: <span class="kw-2">&amp;</span>TwoDpoint) -&gt; f64 {
+    <span class="number">418.9829 </span>* <span class="number">2. </span>- (x.<span class="number">0 </span>* x.<span class="number">0</span>.abs().sqrt().sin() + x.<span class="number">1 </span>* x.<span class="number">1</span>.abs().sqrt().sin())
+}
 
 <span class="doccomment">/// standard normal distribution (mean 0, std 1)
 </span><span class="kw">fn </span>norm(x: f64) -&gt; f64 {
@@ -200,8 +220,8 @@
     <span class="comment">// LHS Sample
     </span><span class="kw">let </span><span class="kw-2">mut </span>rng = ChaCha8Rng::seed_from_u64(<span class="number">2</span>);
     <span class="kw">let </span>n: usize = <span class="number">5</span>; <span class="comment">// number of points to sample
-    </span><span class="kw">let </span>x_range = (-<span class="number">5.</span>, <span class="number">10.</span>);
-    <span class="kw">let </span>y_range = (-<span class="number">5.</span>, <span class="number">10.</span>);
+    </span><span class="kw">let </span>x_range = (-<span class="number">500.</span>, <span class="number">500.</span>);
+    <span class="kw">let </span>y_range = (-<span class="number">500.</span>, <span class="number">500.</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>range_1: Vec&lt;usize&gt; = (<span class="number">0</span>..(n + <span class="number">1</span>)).collect();
     <span class="kw">let </span><span class="kw-2">mut </span>range_2 = range_1.clone();
     range_1.shuffle(<span class="kw-2">&amp;mut </span>rng);
@@ -210,23 +230,29 @@
         .into_iter()
         .zip(range_2)
         .map(|(i, j)| {
-            <span class="kw">let </span>x = (i <span class="kw">as </span>f64 + x_range.<span class="number">0</span>) * (x_range.<span class="number">1 </span>- x_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64);
-            <span class="kw">let </span>y = (j <span class="kw">as </span>f64 + y_range.<span class="number">0</span>) * (y_range.<span class="number">1 </span>- y_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64);
-            TwoDpoint(x, y)
+            <span class="comment">// println!(&quot;{}&quot;, i);
+            // println!(&quot;{}&quot;, j);
+            </span><span class="kw">let </span>x = x_range.<span class="number">0 </span>+ (i <span class="kw">as </span>f64) * (x_range.<span class="number">1 </span>- x_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64);
+            <span class="kw">let </span>y = y_range.<span class="number">0 </span>+ (j <span class="kw">as </span>f64) * (y_range.<span class="number">1 </span>- y_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64);
+            <span class="comment">// println!(&quot;{}&quot;, x);
+            // println!(&quot;{}&quot;, y);
+            </span>TwoDpoint(x, y)
         })
         .collect();
-    <span class="kw">let </span>outputs: Vec&lt;f64&gt; = samples.iter().map(rosenbrock).collect();
+    <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, samples[<span class="number">0</span>]);
+    <span class="comment">// panic!();
+    </span><span class="kw">let </span>outputs: Vec&lt;f64&gt; = samples.iter().map(schwefel).collect();
 
     <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, outputs);
     <span class="comment">// create process
-    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.000_000_1</span>, [<span class="number">8.5</span>]).unwrap(); <span class="comment">//
+    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.000_000_1</span>, [<span class="number">1e-3</span>]).unwrap(); <span class="comment">//
     </span><span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, proc.log_marginal_likelihood());
     <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, proc.gradient());
 
     <span class="comment">// generate input to test
-    </span><span class="kw">let </span>n: usize = <span class="number">30</span>;
+    </span><span class="kw">let </span>n: usize = <span class="number">40</span>;
     <span class="kw">let </span>range: Vec&lt;f64&gt; = (<span class="number">0</span>..(n + <span class="number">1</span>))
-        .map(|i| (i <span class="kw">as </span>f64 + x_range.<span class="number">0</span>) * (x_range.<span class="number">1 </span>- x_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64))
+        .map(|i| x_range.<span class="number">0 </span>+ (i <span class="kw">as </span>f64) * (x_range.<span class="number">1 </span>- x_range.<span class="number">0</span>) / (n <span class="kw">as </span>f64))
         .collect();
     <span class="kw">let </span>test_inputs: Vec&lt;TwoDpoint&gt; = range
         .clone()
@@ -237,7 +263,7 @@
     <span class="comment">// println!(&quot;{:?}&quot;, &amp;test_inputs[132..150]);
     // panic!();
 
-    </span><span class="kw">let </span>zeta = <span class="number">1000.</span>;
+    </span><span class="kw">let </span>zeta = <span class="number">0.01</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>minimum = outputs.iter().fold(f64::INFINITY, |a, <span class="kw-2">&amp;</span>b| a.min(b));
     <span class="macro">println!</span>(<span class="string">&quot;Initial minimum {}&quot;</span>, minimum);
     <span class="kw">for </span>_i <span class="kw">in </span><span class="number">1</span>..<span class="number">75 </span>{
@@ -258,14 +284,14 @@
                 )
             })
             .collect();
-        <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res[<span class="number">224</span>]);
-        res.sort_by(|a, b| (a.<span class="number">4</span>).partial_cmp(<span class="kw-2">&amp;</span>(b.<span class="number">4</span>)).unwrap());
+        <span class="comment">// println!(&quot;{:?}&quot;, res[224]);
+        </span>res.sort_by(|a, b| (a.<span class="number">4</span>).partial_cmp(<span class="kw-2">&amp;</span>(b.<span class="number">4</span>)).unwrap());
         <span class="comment">// print the first 20 elements of res
-        </span><span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res.iter().take(<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;());
-        <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, res.iter().rev().take(<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;());
-        <span class="kw">let </span>next = res.pop().unwrap();
+        // println!(&quot;{:?}&quot;, res.iter().take(1).collect::&lt;Vec&lt;_&gt;&gt;());
+        // println!(&quot;{:?}&quot;, res.iter().rev().take(1).collect::&lt;Vec&lt;_&gt;&gt;());
+        </span><span class="kw">let </span>next = res.pop().unwrap();
         <span class="macro">println!</span>(<span class="string">&quot;Next {:?}&quot;</span>, next);
-        <span class="kw">let </span>val = rosenbrock(<span class="kw-2">&amp;</span>next.<span class="number">0</span>);
+        <span class="kw">let </span>val = schwefel(<span class="kw-2">&amp;</span>next.<span class="number">0</span>);
         <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, val);
         <span class="kw">if </span>val &lt; minimum {
             <span class="macro">println!</span>(<span class="string">&quot;Switch&quot;</span>);
@@ -276,11 +302,11 @@
     </span>}
 
     <span class="comment">// panic!();
-    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.01</span>, [<span class="number">3.5</span>]).unwrap();
-    <span class="kw">let </span>factor = <span class="number">15.</span>;
+    </span><span class="kw">let </span><span class="kw-2">mut </span>proc = GaussProcs::new(samples.clone(), outputs.clone(), <span class="number">0.01</span>, [<span class="number">1e-3</span>]).unwrap();
+    <span class="kw">let </span>factor = <span class="number">30.</span>;
 
     <span class="comment">// this loop effectivley uses UCB to converge on minimum
-    </span><span class="kw">for </span>_i <span class="kw">in </span><span class="number">1</span>..<span class="number">100 </span>{
+    </span><span class="kw">for </span>_i <span class="kw">in </span><span class="number">1</span>..<span class="number">200 </span>{
         <span class="kw">let </span>(mu, sigma) = proc.interpolate(<span class="kw-2">&amp;</span>test_inputs);
         <span class="comment">// println!(&quot;{:?}&quot;, mu);
         // println!(&quot;{:?},{:?}&quot;, test_inputs[0], mu.get(0, 0));
@@ -297,7 +323,7 @@
         });
         <span class="kw">let </span>next = res.pop().unwrap();
         <span class="macro">println!</span>(<span class="string">&quot;Next {:?}&quot;</span>, next);
-        <span class="kw">let </span>val = rosenbrock(<span class="kw-2">&amp;</span>next.<span class="number">0</span>);
+        <span class="kw">let </span>val = schwefel(<span class="kw-2">&amp;</span>next.<span class="number">0</span>);
         proc.update(next.<span class="number">0</span>, val).unwrap();
     }
 }
