@@ -4,7 +4,8 @@ resolver = "2"
 members = [
 	"gauss-procs",
 	"gauss-lib",
-	"rosenbrock"
+	"rosenbrock",
+	"schwefel"
 ]
 
 [workspace.dependencies]
@@ -31,6 +32,7 @@ rand_chacha = "0.3.1"
 statrs = "0.16.0"
 # serde = { version = "1.0.164", features = ["derive"] }
 # serde_json = "1.0.107"
+tikv-jemallocator = "0.5.4"
 
 
 [profile.release]

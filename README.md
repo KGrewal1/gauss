@@ -13,3 +13,6 @@ To see documentation, given a rust compiler run
 <https://www.sfu.ca/~ssurjano/rosen.html>
 
 `RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps`
+
+try schwefel
+<https://www.sfu.ca/~ssurjano/schwef.html>

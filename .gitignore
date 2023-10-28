@@ -6,3 +6,4 @@ proc*txt
 *.out*
 flamegraph.svg
 *.profraw
+trace*

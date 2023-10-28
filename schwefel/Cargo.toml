@@ -1,0 +1,21 @@
+[package]
+name = "schwefel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# argmin = { workspace = true }
+# faer = { workspace = true }
+gauss-lib = { workspace = true }
+itertools = { workspace = true }
+rand = {workspace = true}
+rand_chacha = {workspace = true}
+statrs = {workspace = true}
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = {workspace = true}
+# ordered-float = { workspace = true }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "../katex-header.html"]
